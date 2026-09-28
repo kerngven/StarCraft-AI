@@ -1,0 +1,15 @@
+{
+  "name": "starcraft-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LLM-driven RTS on the StarCraft HTML5 fork. P0: local mock server + LLM-vs-script spike.",
+  "scripts": {
+    "assets": "node tools/download-assets.js",
+    "start": "node tools/server.js",
+    "server": "node tools/server.js",
+    "spike": "node tools/spike.js"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

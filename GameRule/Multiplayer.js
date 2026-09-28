@@ -7,7 +7,9 @@ var Multiplayer={
     getSocket:function(){
         if (window.WebSocket) {
             //ServerList: (1)HongKong:nvhae.com (3)Canada:104.128.82.12
-            var webSocket=Multiplayer.webSocket=new WebSocket('ws://nvhae.com:28082');
+            //Game.serverUrl defaults to the original; override via ?serverUrl=...
+            //to point at the local mock server (tools/mock-server.js). See P0.6.
+            var webSocket=Multiplayer.webSocket=new WebSocket(Game.serverUrl);
             webSocket.onerror=function(){
                 //Offline flag for Store&Forward
                 Game.offline=true;

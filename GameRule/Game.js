@@ -12,6 +12,10 @@ var Game={
     playerNum:2,//By default
     teams:{},
     multiplayer:false,//By default
+    //WebSocket server URL. Defaults to the original black-box server; override
+    //via ?serverUrl=... (e.g. ws://localhost:28083) to point at the local mock
+    //server (tools/mock-server.js) for self-contained local play. See P0.6.
+    serverUrl:'ws://nvhae.com:28082',
     cxt:$('#middleCanvas')[0].getContext('2d'),
     frontCxt:$('#frontCanvas')[0].getContext('2d'),
     backCxt:$('#backCanvas')[0].getContext('2d'),
@@ -85,6 +89,28 @@ var Game={
         $('div.GameLayer').hide();
         $('#'+layerName).show(); //show('slow')
     },
+    //Parse URL query params to make boot deterministic (no blocking prompt).
+    //  ?cdn=<url>       -> Game.CDN = <url> (normalized to end with /)
+    //  ?serverUrl=<ws>  -> Game.serverUrl = <ws>
+    //  ?level=<n>       -> Game.level = n (auto-select a level, for headless)
+    //  ?offline=1       -> Game.offline = true
+    //Defaults: CDN='' (local assets), serverUrl=local mock, level=null.
+    parseQuery:function(){
+        var q=new URLSearchParams(window.location.search);
+        if (q.has('cdn')){
+            var cdn=q.get('cdn');
+            if (cdn){
+                if (!cdn.startsWith('http://')) cdn='http://'+cdn;
+                if (!cdn.endsWith('/')) cdn+='/';
+                Game.CDN=cdn;
+            }
+        } else {
+            Game.CDN='';//local, self-contained
+        }
+        if (q.has('serverUrl')) Game.serverUrl=q.get('serverUrl');
+        if (q.has('level')) Game.level=parseInt(q.get('level'),10);
+        if (q.has('offline')) Game.offline=(q.get('offline')==='1'||q.get('offline')==='true');
+    },
     init:function(){
         //Prevent full select
         $('div.GameLayer').on("selectstart",function(event){
@@ -94,14 +120,11 @@ var Game={
         window.onresize=Game.resizeWindow;
         /*window.requestAnimationFrame=requestAnimationFrame || webkitRequestAnimationFrame
          || mozRequestAnimationFrame || msRequestAnimationFrame || oRequestAnimationFrame;//Old browser compatible*/
-        //Online mode
-        if (!Game.offline){
-            Game.CDN=prompt('Please input CDN location for images and audios:');
-            if (Game.CDN){
-                if (!Game.CDN.startsWith('http://')) Game.CDN='http://'+Game.CDN;
-                if (!Game.CDN.endsWith('/')) Game.CDN+='/';
-            }
-        }
+        //CDN location for images/audios — deterministic (no blocking prompt).
+        //  ?cdn=<url>      -> use that CDN (e.g. http://www.nvhae.com/starcraft)
+        //  ?serverUrl=<ws> -> WebSocket server (default: local mock ws://localhost:28083)
+        //  (default)       -> CDN='' = load from local img/ & bgm/ (self-contained, P0.6)
+        Game.parseQuery();
         //Start loading
         Game.layerSwitchTo("GameLoading");
         //Zerg
@@ -223,6 +246,10 @@ var Game={
             Game.level=parseInt(this.value);
             Game.play();
         });
+        //Auto-play when ?level=<n> is provided (headless / scripted boot).
+        if (Game.level!=null){
+            setTimeout(function(){ Game.play(); }, 300);
+        }
     },
     play:function(){
         //Load level to initial when no error occurs

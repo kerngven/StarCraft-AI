@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Please wait</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f7f7f7;
+      color: #222;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .box {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 32px;
+      max-width: 520px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    }
+    .small {
+      color: #666;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+  </style>
+  <script>
+    let s = 15;
+    setInterval(function () {
+      s--;
+      const el = document.getElementById('count');
+      if (el && s >= 0) el.textContent = s;
+    }, 1000);
+    setInterval(function() {
+        window.location.reload();
+    }, 16000);
+  </script>
+</head>
+<body>
+  <div class="box">
+    <h2>Please wait a moment</h2>
+    <p>Your request is being rate-limited. The page will retry automatically in <span id="count">15</span> seconds.</p>
+    <div class="small">This usually clears on its own.</div>
+  </div>
+</body>
+</html>
