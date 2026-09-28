@@ -2,3 +2,7 @@ Thumbs.db
 .svn/
 .idea/
 Original/
+node_modules/
+package-lock.json
+*.log
+.DS_Store
