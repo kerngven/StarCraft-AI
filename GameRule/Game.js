@@ -110,6 +110,11 @@ var Game={
         if (q.has('serverUrl')) Game.serverUrl=q.get('serverUrl');
         if (q.has('level')) Game.level=parseInt(q.get('level'),10);
         if (q.has('offline')) Game.offline=(q.get('offline')==='1'||q.get('offline')==='true');
+        //Auto-accept confirm() dialogs (e.g. level 2 "Want enter multiplayer mode?")
+        //for headless / scripted boot.
+        if (q.has('confirm') && (q.get('confirm')==='1'||q.get('confirm')==='true')){
+            window.confirm=function(){ return true; };
+        }
     },
     init:function(){
         //Prevent full select

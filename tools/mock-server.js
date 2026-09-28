@@ -192,8 +192,13 @@ function startGame() {
   room.clientTicks = new Array(PLAYERS).fill(0);
   room.cmds = null;
   room.replay = {};
-  room.roomLag = 0;
-  log('=== GAME START ===');
+  // Bootstrap buffer: the original server sets roomLag = max measured network
+  // tickLag, so the first 'tick' it sends is room.tick + roomLag (>0), which is
+  // what lets clients start advancing (they only run while mainTick < serverTick).
+  // Locally there is no network lag, so we inject a small fixed buffer (2 ticks)
+  // to break the otherwise-deadlocked tick-0 bootstrap.
+  room.roomLag = 2;
+  log('=== GAME START === (roomLag=' + room.roomLag + ')');
   // Tell each client its team and the first tick.
   room.seats.forEach((s, i) => {
     if (s && s.kind === 'client') {
@@ -225,13 +230,8 @@ function tickLoop() {
 function handleMessage(ws, msg) {
   switch (msg.type) {
     case 'pong':
-      // Latency measurement (simplified: keep tickLag small for local play).
-      if (ws.pingStart) {
-        const latency = Date.now() - ws.pingStart;
-        ws.tickLag = Math.max(0, Math.ceil(latency * 2 / 100));
-        ws.pingStart = null;
-      }
-      // Keep pinging to measure (original pings 5x).
+      // Local play: keep tickLag at 0 (no artificial network lag).
+      // The original server pings 5x to estimate RTT; we just re-ping.
       ws.pingStart = Date.now();
       send(ws, { type: 'ping' });
       break;
