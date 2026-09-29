@@ -704,7 +704,7 @@ Burst.ZergBuildingBurst=Burst.extends({
     constructorPlus:function(props){
         //Need clear mud when ZergBuildingBurst finished
         this.callback=function(){
-            Map.needRefresh="MAP";
+            GameMap.needRefresh="MAP";
         };
     },
     prototypePlus:{

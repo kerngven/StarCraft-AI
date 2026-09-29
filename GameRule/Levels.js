@@ -3,14 +3,14 @@ var Levels=[
         level:1,
         load:function(){
             //Load map
-            Map.setCurrentMap('Switchback');
+            GameMap.setCurrentGameMap('Switchback');
             //Choose side and apply race style
             var races=['Terran','Zerg'];
             var startPoint=[{x:50,y:50},{x:200,y:50}];
             if (!Game.replayFlag) Game.team=Math.random()*2>>0;
             Game.race.choose(races[Game.team]);
-            Map.offsetX=startPoint[Game.team].x;
-            Map.offsetY=startPoint[Game.team].y;
+            GameMap.offsetX=startPoint[Game.team].x;
+            GameMap.offsetY=startPoint[Game.team].y;
             //Load units
             new Terran.BattleCruiser({x:100,y:100});
             new Terran.Wraith({x:200,y:100});
@@ -47,9 +47,9 @@ var Levels=[
                 Multiplayer.enable();//Has fog for level2
             }
             //Load map
-            Map.setCurrentMap('Volcanis');
-            Map.offsetX=120;
-            Map.offsetY=50;
+            GameMap.setCurrentGameMap('Volcanis');
+            GameMap.offsetX=120;
+            GameMap.offsetY=50;
             //Apply race style
             Game.race.choose('Zerg');
             //Load units
@@ -79,7 +79,7 @@ var Levels=[
         level:3,
         load:function(){
             //Load map
-            Map.setCurrentMap('TrenchWars');
+            GameMap.setCurrentGameMap('TrenchWars');
             //Apply race style
             Game.race.choose('Zerg');
             //Load units
@@ -118,17 +118,17 @@ var Levels=[
                     Resource[0].gas=Resource[1].gas=10000;
                 },0);
                 Cheat.manUnlimited=true;
-                Map.fogFlag=false;
+                GameMap.fogFlag=false;
             }*/
             //Load map
-            Map.setCurrentMap('BloodBath');
+            GameMap.setCurrentGameMap('BloodBath');
             //Choose side and apply race style
             var races=['Zerg','Terran'];
             var startPoint=[{x:0,y:50},{x:200,y:50}];
             if (!Game.replayFlag) Game.team=Math.random()*2>>0;
             Game.race.choose(races[Game.team]);
-            Map.offsetX=startPoint[Game.team].x;
-            Map.offsetY=startPoint[Game.team].y;
+            GameMap.offsetX=startPoint[Game.team].x;
+            GameMap.offsetY=startPoint[Game.team].y;
             //Load units
             new Zerg.Drone({x:100,y:100});
             new Zerg.Zergling({x:200,y:100});
@@ -171,14 +171,14 @@ var Levels=[
         level:5,
         load:function(){
             //Load map
-            Map.setCurrentMap('OrbitalRelay');
+            GameMap.setCurrentGameMap('OrbitalRelay');
             //Choose side and apply race style
             var races=['Terran','Protoss'];
             var startPoint=[{x:0,y:50},{x:200,y:50}];
             if (!Game.replayFlag) Game.team=Math.random()*2>>0;
             Game.race.choose(races[Game.team]);
-            Map.offsetX=startPoint[Game.team].x;
-            Map.offsetY=startPoint[Game.team].y;
+            GameMap.offsetX=startPoint[Game.team].x;
+            GameMap.offsetY=startPoint[Game.team].y;
             //Load units
             new Terran.Marine({x:100,y:100});
             new Terran.Firebat({x:200,y:100});
@@ -222,14 +222,14 @@ var Levels=[
         level:6,
         load:function(){
             //Load map
-            Map.setCurrentMap('ThinIce');
+            GameMap.setCurrentGameMap('ThinIce');
             //Choose side and apply race style
             var races=['Protoss','Zerg'];
             var startPoint=[{x:0,y:50},{x:200,y:50}];
             if (!Game.replayFlag) Game.team=Math.random()*2>>0;
             Game.race.choose(races[Game.team]);
-            Map.offsetX=startPoint[Game.team].x;
-            Map.offsetY=startPoint[Game.team].y;
+            GameMap.offsetX=startPoint[Game.team].x;
+            GameMap.offsetY=startPoint[Game.team].y;
             //Load units
             new Protoss.Probe({x:100,y:100});
             new Protoss.Zealot({x:200,y:100});
@@ -273,7 +273,7 @@ var Levels=[
         level:7,
         load:function(){
             //Load map
-            Map.setCurrentMap('BigGameHunters');
+            GameMap.setCurrentGameMap('BigGameHunters');
             //Apply race style
             Game.race.choose('Protoss');
             //Add buildings
@@ -349,9 +349,9 @@ var Levels=[
         label:'Campaign',
         load:function(){
             //Load map
-            Map.setCurrentMap('TheHunters');
-            Map.offsetX=0;
-            Map.offsetY=3424;
+            GameMap.setCurrentGameMap('TheHunters');
+            GameMap.offsetX=0;
+            GameMap.offsetY=3424;
             //Multiplayer
             Game.playerNum=4;
             //Choose side and apply race style
@@ -359,8 +359,8 @@ var Levels=[
             var startPoint=[{x:100,y:4000-innerHeight},{x:4000-innerWidth,y:4000-innerHeight},{x:100,y:100},{x:4000-innerWidth,y:100}];
             if (!Game.replayFlag) Game.team=Math.random()*4>>0;
             Game.race.choose(races[Game.team]);
-            Map.offsetX=startPoint[Game.team].x;
-            Map.offsetY=startPoint[Game.team].y;
+            GameMap.offsetX=startPoint[Game.team].x;
+            GameMap.offsetY=startPoint[Game.team].y;
             //Apply cheat
             Cheat.execute('black sheep wall');
             //Our buildings and units
@@ -524,10 +524,10 @@ var Levels=[
         label:'ProtectAthena',
         load:function(){
             //Load map
-            Map.setCurrentMap('OrbitalRelay');
-            Map.offsetX=(1536-Game.HBOUND/2)>>0;
-            Map.offsetY=(1536-Game.VBOUND/2)>>0;
-            Map.fogFlag=false;
+            GameMap.setCurrentGameMap('OrbitalRelay');
+            GameMap.offsetX=(1536-Game.HBOUND/2)>>0;
+            GameMap.offsetY=(1536-Game.VBOUND/2)>>0;
+            GameMap.fogFlag=false;
             //Apply race style
             Game.race.choose('Protoss');
             //Single player
@@ -598,10 +598,10 @@ var Levels=[
             }*/
             var isNightmare=true;
             //Load map
-            Map.setCurrentMap('Grass');
-            var mapSize=Map.getCurrentMap();
-            Map.offsetX=(mapSize.width-Game.HBOUND)/2>>0;
-            Map.offsetY=(mapSize.height-Game.VBOUND)/2>>0;
+            GameMap.setCurrentGameMap('Grass');
+            var mapSize=GameMap.getCurrentGameMap();
+            GameMap.offsetX=(mapSize.width-Game.HBOUND)/2>>0;
+            GameMap.offsetY=(mapSize.height-Game.VBOUND)/2>>0;
             //Apply race style
             Game.race.choose('Zerg');
             //Single player
@@ -723,10 +723,10 @@ var Levels=[
         label:'TowerDefense',
         load:function(){
             //Load map
-            Map.setCurrentMap('TowerDefense');
-            Map.offsetX=4096-Game.HBOUND;
-            Map.offsetY=3072-Game.VBOUND;
-            Map.fogFlag=false;
+            GameMap.setCurrentGameMap('TowerDefense');
+            GameMap.offsetX=4096-Game.HBOUND;
+            GameMap.offsetY=3072-Game.VBOUND;
+            GameMap.fogFlag=false;
             //Apply race style
             Game.race.choose('Terran');
             //Single player
@@ -736,7 +736,7 @@ var Levels=[
                 Upgrade.EvolvePneumatizedCarapace.effect(1);
             },0);
             Building.prototype.sight=1000;
-            Map.drawMud=function(){};
+            GameMap.drawMud=function(){};
             Zerg.Lurker.prototype.reactionWhenAttackedBy=Unit.prototype.reactionWhenAttackedBy;
             Zerg.Larva.prototype.moveTo=Unit.prototype.moveTo;
             Zerg.Larva.prototype.moveToward=Unit.prototype.moveToward;
@@ -909,7 +909,7 @@ var Levels=[
             var lastReplay=localStorage.getItem('lastReplay');
             if (lastReplay!=null){
                 Game.replayFlag=true;
-                //Map.fogFlag=false;
+                //GameMap.fogFlag=false;
                 // Should not click buttons or trigger key control during replay
                 Button.equipButtonsFor=function(){};
                 //Equip with replay buttons

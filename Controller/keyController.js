@@ -33,16 +33,16 @@ var keyController={
                     break;
                 //Move map
                 case 37:
-                    Map.needRefresh="LEFT";
+                    GameMap.needRefresh="LEFT";
                     break;
                 case 38:
-                    Map.needRefresh="TOP";
+                    GameMap.needRefresh="TOP";
                     break;
                 case 39:
-                    Map.needRefresh="RIGHT";
+                    GameMap.needRefresh="RIGHT";
                     break;
                 case 40:
-                    Map.needRefresh="BOTTOM";
+                    GameMap.needRefresh="BOTTOM";
                     break;
                 //Replay speed control
                 case 107:

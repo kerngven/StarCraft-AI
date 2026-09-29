@@ -251,7 +251,7 @@ _$.matrixOperation=function(matrix,operation){
     }
 };
 
-//Map traverse for array
+//GameMap traverse for array
 _$.mapTraverse=function(array,operation){
     var operationTraverse=function(n){
         if (n instanceof Array) return n.map(operationTraverse);

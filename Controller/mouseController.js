@@ -19,7 +19,7 @@ var mouseController={
         //Selection mode
         if (Button.callback==null) {
             //Find selected one, convert position
-            var selectedOne=Game.getSelectedOne(clickX+Map.offsetX,clickY+Map.offsetY);
+            var selectedOne=Game.getSelectedOne(clickX+GameMap.offsetX,clickY+GameMap.offsetY);
             //Cannot select enemy invisible unit
             if ((selectedOne instanceof Gobj) && selectedOne['isInvisible'+Game.team] && selectedOne.isEnemy()) return;
             //Single select will unselect all units and only choose selected one
@@ -62,7 +62,7 @@ var mouseController={
         //Intercept event inside infoBox
         if (clickY>Game.infoBox.y) return;
         //Show right click cursor
-        var pos={x:(clickX+Map.offsetX),y:(clickY+Map.offsetY)};
+        var pos={x:(clickX+GameMap.offsetX),y:(clickY+GameMap.offsetY)};
         new Burst.RightClickCursor(pos);
         var charas=Game.allSelected.filter(function(chara){
             //Can only control our alive unit
@@ -263,16 +263,16 @@ var mouseController={
                 Button.callback=null;
             });
             mouseController.canvasScreen.on('panleft',function(event){
-                Map.needRefresh="RIGHT";
+                GameMap.needRefresh="RIGHT";
             });
             mouseController.canvasScreen.on('panright',function(event){
-                Map.needRefresh="LEFT";
+                GameMap.needRefresh="LEFT";
             });
             mouseController.mobileScreen.on('panup',function(event){
-                Map.needRefresh="BOTTOM";
+                GameMap.needRefresh="BOTTOM";
             });
             mouseController.mobileScreen.on('pandown',function(event){
-                Map.needRefresh="TOP";
+                GameMap.needRefresh="TOP";
             });
         }
         //Both sides
@@ -281,11 +281,11 @@ var mouseController={
         });
         $('canvas[name="mini_map"]').on('click',function(event){
             event.preventDefault();
-            Map.clickHandler(event);
+            GameMap.clickHandler(event);
         });
         $('canvas[name="mini_map"]').on('contextmenu',function(event){
             event.preventDefault();
-            Map.dblClickHandler(event);
+            GameMap.dblClickHandler(event);
         });
     }
 };

@@ -137,12 +137,12 @@ Gobj.prototype.distanceFrom=function(obj){
     }
 };
 Gobj.prototype.insideScreen=function(){
-    return ((this.x+this.width)>Map.offsetX) && (this.x<(Map.offsetX+Game.HBOUND))
-        && ((this.y+this.height)>Map.offsetY) && (this.y<(Map.offsetY+Game.VBOUND));
+    return ((this.x+this.width)>GameMap.offsetX) && (this.x<(GameMap.offsetX+Game.HBOUND))
+        && ((this.y+this.height)>GameMap.offsetY) && (this.y<(GameMap.offsetY+Game.VBOUND));
 };
 Gobj.prototype.sightInsideScreen=function(){
-    return ((this.x+this.width)>(Map.offsetX-this.get('sight'))) && (this.x<(Map.offsetX+Game.HBOUND+this.get('sight')))
-        && ((this.y+this.height)>(Map.offsetY-this.get('sight'))) && (this.y<(Map.offsetY+Game.VBOUND+this.get('sight')));
+    return ((this.x+this.width)>(GameMap.offsetX-this.get('sight'))) && (this.x<(GameMap.offsetX+Game.HBOUND+this.get('sight')))
+        && ((this.y+this.height)>(GameMap.offsetY-this.get('sight'))) && (this.y<(GameMap.offsetY+Game.VBOUND+this.get('sight')));
 };
 Gobj.prototype.softCollideWith=function(chara,N){
     if (N==null) N=1;

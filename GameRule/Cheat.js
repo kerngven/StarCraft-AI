@@ -46,12 +46,12 @@ var Cheat={
                 break;
             case "black sheep wall":
                 //Switch between show fog or not show
-                Map.fogFlag=!Map.fogFlag;
-                if (Map.fogFlag==false){
+                GameMap.fogFlag=!GameMap.fogFlag;
+                if (GameMap.fogFlag==false){
                     //Clear old fog on screen
                     Game.fogCxt.clearRect(0,0,Game.HBOUND,Game.VBOUND);
                     //Redraw mini-map
-                    Map.drawFogAndMinimap();
+                    GameMap.drawFogAndMinimap();
                 }
                 break;
             case "something for nothing":
@@ -101,11 +101,11 @@ var Cheat={
                 }
                 break;
             case "big daddy":
-                var daddy=new Hero.HeroCruiser({x:Map.offsetX+Game.HBOUND/2,y:Map.offsetY+Game.VBOUND/2});
+                var daddy=new Hero.HeroCruiser({x:GameMap.offsetX+Game.HBOUND/2,y:GameMap.offsetY+Game.VBOUND/2});
                 Game.changeSelectedTo(daddy);
                 break;
             case "big mommy":
-                var mommy=new Hero.Sarah({x:Map.offsetX+Game.HBOUND/2,y:Map.offsetY+Game.VBOUND/2});
+                var mommy=new Hero.Sarah({x:GameMap.offsetX+Game.HBOUND/2,y:GameMap.offsetY+Game.VBOUND/2});
                 Game.changeSelectedTo(mommy);
                 break;
             case "game over man":

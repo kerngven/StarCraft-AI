@@ -7,7 +7,10 @@ var sourceLoader={
         sourceLoader.sourceNum++;
         sourceLoader.allLoaded=false;
         var source;
+        var done=false;
         var loaded=function(){
+            if (done) return;
+            done=true;
             sourceLoader.loadedNum++;
             if(sourceLoader.loadedNum==sourceLoader.sourceNum){
                 sourceLoader.allLoaded=true;
@@ -17,11 +20,13 @@ var sourceLoader={
             source=new Image();
             source.src=src;
             source.onload=loaded;
+            source.onerror=loaded;//P0.6: a missing/failed asset must not block game boot
             sourceLoader.sources[id]=source;
         }
         if (type=='audio'){
             source=new Audio();
             source.addEventListener('canplaythrough',loaded,false);
+            source.addEventListener('error',loaded,false);//P0.6: audio failures don't block boot
             //source.oncanplaythrough=loaded;
             source.src=src;//Pose after listener to prevent fired early
             sourceLoader.sources[id]=source;
@@ -34,6 +39,7 @@ var sourceLoader={
                 _$.modules[src]=_$.define.loadedBuilders.shift();
                 loaded();
             };
+            node.onerror=loaded;//P0.6: a failed script must not block game boot
             node.src=src+'.js';
             document.getElementsByTagName('head')[0].appendChild(node);
         }

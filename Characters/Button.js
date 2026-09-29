@@ -724,7 +724,7 @@ var Button={
                     var offset=$('#fogCanvas').offset();
                     var clickX=event.pageX-offset.left;
                     var clickY=event.pageY-offset.top;
-                    var location={x:clickX+Map.offsetX,y:clickY+Map.offsetY};
+                    var location={x:clickX+GameMap.offsetX,y:clickY+GameMap.offsetY};
                     //Show right click cursor
                     new Burst.RightClickCursor(location);
                     //Call back with location info
