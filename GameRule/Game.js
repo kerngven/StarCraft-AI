@@ -906,6 +906,7 @@ var Game={
                 delete Game.commands[Game.mainTick];
             }
             /************ Draw part *************/
+            try{
             //Clear all canvas
             Game.cxt.clearRect(0,0,Game.HBOUND,Game.VBOUND);
             Game.frontCxt.clearRect(0,0,Game.HBOUND,Game.VBOUND);
@@ -976,6 +977,7 @@ var Game={
             Game.drawInfoBox();
             Game.drawSourceBox();
             Game.drawProcessingBox();
+            }catch(e){/* broken image (CDN down) or other draw error: skip this frame's visuals, keep ticking */}
             /************ Calculate for next frame *************/
             //Clock ticking
             Game.mainTick++;

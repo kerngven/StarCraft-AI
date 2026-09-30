@@ -6,3 +6,5 @@ node_modules/
 package-lock.json
 *.log
 .DS_Store
+# raw spike recordings (regenerable; the curated proof lives in tools/spike/evidence/)
+tools/spike/video/
