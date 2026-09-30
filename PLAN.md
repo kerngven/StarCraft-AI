@@ -31,20 +31,27 @@
   - 联系作者 gloomyson（raydogg779）谈 LICENSE / 协作方式。
   - 原仓库无 LICENSE，法律上默认不可复用；素材为 SC1 原图，商用另需替换或授权。
   - 交付：授权邮件/协议存档。
-- [ ] **P0.2 跑通 fork**
+- [x] **P0.2 跑通 fork** ✅
   - `ahzs645/StarCraft`（GitHub Pages 已部署，直接可玩）；本地起一份。
   - 代码尽早 fork 到自己仓库（降低单作者 bus factor）。
-- [ ] **P0.3 验证 fork 多人**
+- [x] **P0.3 验证 fork 多人** ✅
   - 走 `ws://nvhae.com:28082` 跑 2 人局，记录稳定性/延迟/断线表现。
-- [ ] **P0.4 核心假设 spike（最重要，决策门）**
+  - 本地 mock 服务器验证：mainTick/serverTick 同步推进至 608+，0 错误。
+- [x] **P0.4 核心假设 spike（最重要，决策门）** ✅ 2026-09-30
   - Playwright/Puppeteer headless 浏览器：1 个 LLM 玩家 vs 1 个脚本玩家完整跑一局。
   - 验收：LLM 完整打一局；输出合法 JSON；引擎不崩；录到一段可看的对局。
   - **决策门：若「AI 打得没意思」，先调节奏/观测/人设，不往下砸钱。**
+  - **结果（commit ab68ce3）**：llmValidJSON=14/15（93%），双方打到全灭（our=0/enemy=0），
+    引擎稳定至 tick~1850，16.5MB 可看录像。证据 `tools/spike/evidence/`。
+  - 关键修复：`var Map`→`GameMap`（修 Playwright page.evaluate）；Game.js draw 包
+    try/catch（缺图不卡 tick）；LLM 用 `/no_think`+max_tokens≥1200+空响应重试；
+    本地化 77 张图（CDN=''，nvhae.com 并发下 502）。
 - [ ] **P0.5 IP 命名（尽早定，避免后期返工）**
   - 自创单位/建筑名，避开 `Marine`/`Command Center` 等暴雪命名。
   - 命名会渗进序列化文本、UI、回放——越早定越省返工。
-- [ ] **P0.6 本地 mock 服务器（备）**
+- [x] **P0.6 本地 mock 服务器（备）** ✅
   - 备一个本地 mock WS 服务器，核心验证不押在 `nvhae.com` 上。
+  - `tools/mock-server.js`（:28083）已实现 lockstep + roomLag=2 bootstrap，P0.3/P0.4 全程用它。
 
 **交付物**：「AI vs 脚本」2 人局演示视频 + 授权进展记录 + 命名表初稿。
 
