@@ -7,7 +7,7 @@
     "assets": "node tools/download-assets.js",
     "start": "node tools/server.js",
     "server": "node tools/server.js",
-    "spike": "node tools/spike.js"
+    "spike": "node tools/spike/spike.js"
   },
   "dependencies": {
     "playwright": "^1.63.0",
