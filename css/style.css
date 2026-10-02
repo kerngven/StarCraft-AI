@@ -459,6 +459,10 @@ div#GamePlay div.command_Tabs button.active{color:#fff;background:#155579;border
 div#GamePlay div.command_LogEntries{max-height:65px;overflow-y:scroll}
 div#GamePlay div.command_LogEntries button{display:block;box-sizing:border-box;width:100%;overflow:hidden;padding:3px 0;text-align:left;text-overflow:ellipsis;white-space:nowrap;color:#d9f4ff;background:transparent;border:0;border-top:1px solid rgba(130,190,225,.2);font:12px Arial;cursor:pointer;-webkit-user-select:text;user-select:text}
 div#GamePlay div.command_LogEntries button.active{background:rgba(48,126,171,.28)}
+div#GamePlay div.command_LogEntries div.command_LogItem{display:flex;align-items:stretch;border-top:1px solid rgba(130,190,225,.2)}
+div#GamePlay div.command_LogEntries div.command_LogItem button.command_LogSelect{flex:1;width:auto;border-top:0}
+div#GamePlay div.command_LogEntries div.command_LogItem button.command_CopyTopic{width:auto;margin:0;padding:2px 6px;color:#bfe9ff;background:#155579;border:0;border-left:1px solid #3b87b8;font-size:11px;cursor:pointer}
+div#GamePlay div.command_LogEntries div.command_LogItem button.command_CopyTopic:hover{background:#257ba6;color:#fff}
 div#GamePlay div.command_LogEntries button.human{color:#ffe89c}
 div#GamePlay div.command_LogEntries button.fallback{color:#ffb0a7}
 div#GamePlay div.command_LogEntries button.error{color:#ffaaa0}

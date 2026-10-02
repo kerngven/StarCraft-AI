@@ -21,15 +21,25 @@ Legal commands:
 
 For a compact group order, replace uids with groups, for example {"type":"attack","groups":["unit:Marine"],"pos":{"x":320,"y":180}}. Do not put group strings inside uids.
 
-Only use the action names in observation.commandGuide.actionTypes; these exactly match the in-game control console. Use IDs, positions, and production options present in the observation. For a large same-type force, use groups such as ["unit:Marine"] rather than every individual ID. observation.commandGuide.validCommands contains safe, concrete commands built from the current battlefield; copy one of them exactly when unsure. The observation is a fresh battlefield snapshot; react to observation.battle, enemies, resources, and the human instruction. Prefer attack or retreat when observation.battle.underAttack is true; when enemies are visible, issue a combat or scouting command; when no enemies are visible, use a feasible move, production, or build command.
+Only use the action names in observation.commandGuide.actionTypes; these exactly match the in-game control console. Use IDs, positions, and production options present in the observation. For a large same-type force, use groups such as ["unit:Marine"] rather than every individual ID. observation.map is a preloaded static map profile; obey its boundaries and pathing note. observation.vision separates currently visible cells from fog and includes last-known enemy sightings—never treat a fogged sighting as a current enemy. observation.opportunities and observation.battle.combatAdvantage identify favorable attack, defense, retreat, or economy choices. observation.commandGuide.validCommands contains safe, concrete commands built from the current battlefield; copy one exactly only when it matches a listed opportunity. The observation is a fresh battlefield snapshot; react to battle, vision, enemies, resources, and the human instruction. Do not issue an arbitrary move merely because no enemy is visible; prefer production, gathering, upgrades, or holding position.
 
 The array MUST contain 1–3 executable commands. NEVER return [], no-op, null, an empty object, or an explanation. Before answering, verify that every uids value is non-empty and every move/attack/build command has numeric x/y. Your whole response must be a non-empty JSON array and nothing else.`;
 const ALLOWED_BASES=(process.env.AI_ALLOWED_BASES||'').split(',').map(value=>value.trim().replace(/\/$/,'')).filter(Boolean);
 const json=(res,status,body)=>{res.writeHead(status,{'content-type':'application/json','access-control-allow-origin':'*','access-control-allow-methods':'GET,POST,OPTIONS','access-control-allow-headers':'content-type'});res.end(JSON.stringify(body));};
 const read=req=>new Promise((resolve,reject)=>{let body='';req.on('data',part=>{body+=part;if(body.length>1e6)reject(new Error('body too large'));});req.on('end',()=>{try{resolve(JSON.parse(body||'{}'));}catch(error){reject(error);}});});
+function providerPayload(config, body, stream) {
+  const modern=config.apiMode==='responses';
+  const payload=modern?{model:body.model,input:body.messages,max_output_tokens:body.max_tokens,temperature:body.temperature,top_p:body.top_p}:Object.assign({},body);
+  if(stream)payload.stream=true;
+  // Qwen reasoning models served by llama.cpp accept this OpenAI-compatible
+  // template argument.  Without it, they may spend the entire command budget
+  // in reasoning_content and never emit the JSON command in content.
+  if(config.type==='local')payload.chat_template_kwargs={enable_thinking:false};
+  return payload;
+}
 async function callProvider(config, body) {
   const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),TIMEOUT);
-  try { const headers={'content-type':'application/json'}; if(config.key)headers.authorization='Bearer '+config.key; const modern=config.apiMode==='responses', payload=modern?{model:body.model,input:body.messages,max_output_tokens:body.max_tokens,temperature:body.temperature,top_p:body.top_p}:body; const response=await fetch(config.base.replace(/\/$/,'')+(modern?'/responses':'/chat/completions'),{method:'POST',signal:controller.signal,headers:headers,body:JSON.stringify(payload)}); if(!response.ok)throw new Error('provider HTTP '+response.status); return await response.json(); }
+  try { const headers={'content-type':'application/json'}; if(config.key)headers.authorization='Bearer '+config.key; const modern=config.apiMode==='responses', payload=providerPayload(config,body,false); const response=await fetch(config.base.replace(/\/$/,'')+(modern?'/responses':'/chat/completions'),{method:'POST',signal:controller.signal,headers:headers,body:JSON.stringify(payload)}); if(!response.ok)throw new Error('provider HTTP '+response.status); return await response.json(); }
   finally { clearTimeout(timer); }
 }
 function providerContent(output, config) {
@@ -40,7 +50,7 @@ function providerContent(output, config) {
 }
 async function streamProvider(config, body, onDelta, onThinking, signal) {
   const headers={'content-type':'application/json','accept':'text/event-stream'}; if(config.key)headers.authorization='Bearer '+config.key;
-  const modern=config.apiMode==='responses', payload=modern?{model:body.model,input:body.messages,max_output_tokens:body.max_tokens,temperature:body.temperature,top_p:body.top_p,stream:true}:Object.assign({},body,{stream:true});
+  const modern=config.apiMode==='responses', payload=providerPayload(config,body,true);
   const response=await fetch(config.base.replace(/\/$/,'')+(modern?'/responses':'/chat/completions'),{method:'POST',signal:signal,headers:headers,body:JSON.stringify(payload)});
   if(!response.ok)throw new Error('provider HTTP '+response.status);
   if(!(response.headers.get('content-type')||'').includes('text/event-stream')){
@@ -48,10 +58,12 @@ async function streamProvider(config, body, onDelta, onThinking, signal) {
     if(thinking)onThinking(thinking);
     if(content)onDelta(content); return content;
   }
-  const reader=response.body.getReader(), decoder=new TextDecoder(); let buffer='',content='';
-  const consumeLine=line=>{if(!line.startsWith('data:'))return;const raw=line.slice(5).trim();if(raw==='[DONE]')return;try{const event=JSON.parse(raw),deltaObj=event.choices&&event.choices[0]&&event.choices[0].delta||{},delta=deltaObj.content||event.delta||'',thinking=deltaObj.reasoning_content||deltaObj.reasoning||deltaObj.thinking||(event.type&&event.type.indexOf('reasoning')>=0?event.delta||'':'');if(thinking)onThinking(thinking);if(delta){content+=delta;onDelta(delta);}}catch(error){/* ignore provider keepalive/non-JSON events */}};
+  const reader=response.body.getReader(), decoder=new TextDecoder(); let buffer='',content='',rawEvents='',finishReason='',sawThinking=false;
+  const outputFromEvent=event=>{if(typeof event.output_text==='string')return event.output_text;if(event.response)return providerContent(event.response,config);var item=event.item||event.output_item||event.message,parts=item&&item.content||[];if(typeof parts==='string')return parts;if(parts instanceof Array){var text=parts.map(part=>part&&((part.type==='output_text'||part.type==='text')&&(part.text||part.value)||part.text||part.value)||'').join('');if(text)return text;}return '';};
+  const consumeLine=line=>{if(!line.startsWith('data:'))return;const raw=line.slice(5).trim();if(raw==='[DONE]')return;rawEvents+=raw+'\n';try{const event=JSON.parse(raw),choice=event.choices&&event.choices[0]||{},deltaObj=choice.delta||{},delta=deltaObj.content||event.delta||'',thinking=deltaObj.reasoning_content||deltaObj.reasoning||deltaObj.thinking||(event.type&&event.type.indexOf('reasoning')>=0?event.delta||'':'');finishReason=choice.finish_reason||finishReason;if(thinking){sawThinking=true;onThinking(thinking);}if(delta){content+=delta;onDelta(delta);return;}var finalText=outputFromEvent(event);if(finalText&&!content){content=finalText;onDelta(finalText);}}catch(error){/* preserve unparseable raw event for diagnostic output */}};
   for(;;){const chunk=await reader.read();if(chunk.done)break;buffer+=decoder.decode(chunk.value,{stream:true});const lines=buffer.split('\n');buffer=lines.pop();lines.forEach(consumeLine);}
   if(buffer.trim())consumeLine(buffer);
+  if(!String(content||'').trim()){const error=new Error(finishReason==='length'&&sawThinking?'模型思考过程耗尽输出预算，尚未生成命令正文；已为本地模型请求关闭思考模式。':'模型未返回命令正文');error.rawContent=rawEvents||'（供应商流中未收到任何 data 事件）';throw error;}
   return content;
 }
 async function testProvider(config) {
@@ -101,9 +113,9 @@ const server=http.createServer(async(req,res)=>{
       res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache','connection':'keep-alive','access-control-allow-origin':'*'});
       const send=event=>res.write('data: '+JSON.stringify(event)+'\n\n');
       res.on('close',()=>{if(!res.writableEnded)controller.abort();});
-      try{const content=await streamProvider({base:config.base,key:key,apiMode:config.apiMode},request,delta=>send({type:'delta',content:delta}),thinking=>send({type:'thinking',content:thinking}),controller.signal);if(!String(content||'').trim())throw new Error('模型未返回命令正文');const used=Math.min(maxTokens,Math.max(1,Math.ceil(content.length/4)));session.used+=used;session.logs.push({at:Date.now(),used:used,model:request.model,ok:true});session.logs=session.logs.slice(-50);sessions.set(id,session);send({type:'done',content:content});res.end();}catch(error){send({type:'error',error:String(error.message||error)});res.end();}finally{activeSessions.delete(id);}return;
+      try{const content=await streamProvider({base:config.base,key:key,type:config.type,apiMode:config.apiMode},request,delta=>send({type:'delta',content:delta}),thinking=>send({type:'thinking',content:thinking}),controller.signal);const used=Math.min(maxTokens,Math.max(1,Math.ceil(content.length/4)));session.used+=used;session.logs.push({at:Date.now(),used:used,model:request.model,ok:true});session.logs=session.logs.slice(-50);sessions.set(id,session);send({type:'done',content:content});res.end();}catch(error){send({type:'error',error:String(error.message||error),rawContent:error&&error.rawContent||''});res.end();}finally{activeSessions.delete(id);}return;
     }
-    let output,error; for(let attempt=0;attempt<2;attempt++){try{output=await callProvider({base:config.base,key:key,apiMode:config.apiMode},request);break;}catch(cause){error=cause;}}
+    let output,error; for(let attempt=0;attempt<2;attempt++){try{output=await callProvider({base:config.base,key:key,type:config.type,apiMode:config.apiMode},request);break;}catch(cause){error=cause;}}
     if(!output)throw error;
     const usage=output.usage||{}, used=Number(usage.total_tokens||request.max_tokens), prompt=Number(usage.prompt_tokens||0), completion=Number(usage.completion_tokens||Math.max(0,used-prompt)); session.used+=used; session.cost+=(prompt*INPUT_PER_M+completion*OUTPUT_PER_M)/1e6;
     const content=providerContent(output,config)||'[]';

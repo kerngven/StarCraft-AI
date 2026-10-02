@@ -535,6 +535,7 @@ var Game={
             if (typeof AICommander!='undefined') AICommander.beginMatch();
             //Load level to initial when no error occurs
             if (Levels[Game.level-1].load()) return;
+            if (typeof AIAdapter!='undefined') AIAdapter.preloadMap();
             //Need Game.playerNum before expansion
             Game.expandUnitProps();
             Resource.init();
