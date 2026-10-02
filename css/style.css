@@ -401,6 +401,9 @@ div#GameStart div.lobby h1{margin:0 0 16px;font-size:22px}
 div#GameStart div.lobby label{display:block;margin:8px 0}
 div#GameStart div.lobby input{width:100%;box-sizing:border-box;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2;padding:5px}
 div#GameStart div.lobby p{font-size:12px;color:#b4d4e5}
+div#GameStart div.lobby select{width:100%;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2;padding:5px}
+div#GameStart div.lobby small{display:block;font-size:11px;color:#b4d4e5;line-height:1.35}
+div#GameStart div.lobby button{margin:3px 0;color:white;background:#155579;border:1px solid #55a8d9;padding:5px}
 div#GamePlay aside.command_Log h3{margin:0 0 6px;color:#fff;font-size:14px}
 div#GamePlay div.command_LogEntries{max-height:190px;overflow-y:auto}
 div#GamePlay div.command_LogEntries div{padding:3px 0;border-top:1px solid rgba(130,190,225,.2)}

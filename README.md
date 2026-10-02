@@ -18,6 +18,19 @@
 
 ```bash
 npm install
+# 或：make install
+
+# 同时启动游戏与本地房间服务器
+make run
+
+# 完整本地回归
+make check
+```
+
+也可分别手动启动：
+
+```bash
+npm install
 
 # 1) 起本地 mock 服务器（lockstep + roomLag=2 bootstrap）
 node tools/mock-server.js          # ws://localhost:28083

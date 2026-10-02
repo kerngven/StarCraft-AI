@@ -24,9 +24,13 @@
         <div id="GameStart" class="GameLayer">
             <div class="lobby">
                 <h1>AI 指挥官对战</h1>
-                <label>服务器 <input name="serverUrl" value="ws://localhost:28084/?room=demo&players=2&bots=1" /></label>
-                <label>模型 <input name="model" value="gpt-4.1-mini" /></label>
+                <label>主机地址 <input name="serverUrl" value="ws://localhost:28084/?room=demo&players=2&bots=1" /></label>
+                <button type="button" class="createLocalRoom">建立本地房间</button>
+                <small class="localServerHelp">先在主机运行 <code>npm run rooms</code>；将地址中的 localhost 改为主机局域网 IP 后，其他玩家即可连接。</small>
+                <label>模型连接 <select name="model"><option value="gpt-4.1-mini">经济档（gpt-4.1-mini）</option><option value="openai-compatible">OpenAI Compatible</option><option value="local">本地模型</option></select></label>
                 <label>AI 网关 <input name="gatewayUrl" value="http://localhost:28085" /></label>
+                <label>玩家 token <input name="playerToken" type="password" autocomplete="off" required placeholder="必填：你的对局 token" /></label>
+                <label>对手 token <input name="opponentToken" type="password" autocomplete="off" placeholder="可选：与主机 AI 对战时填写" /></label>
                 <p>选择关卡开始。皮肤路径仍会在启动时单独询问。</p>
             </div>
             <div class="levelSelectionBg"></div>

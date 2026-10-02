@@ -24,6 +24,8 @@ var Game={
     _frameInterval:100,
     decisionIntervalTicks:100,
     objective:null,
+    playerToken:null,
+    opponentToken:null,
     mainTick:0,
     serverTick:0,
     commands:{},
@@ -262,12 +264,21 @@ var Game={
                 +"</input></div>");
         }
         //Wait for user select level and play game
+        $('button.createLocalRoom').on('click',function(){
+            var room='local-'+Date.now().toString(36);
+            $('div.lobby input[name="serverUrl"]').val('ws://localhost:28084/?room='+room+'&players=2&bots=0');
+            $('div.lobby small.localServerHelp').text('本地房间已生成。主机运行 npm run rooms；局域网玩家将 localhost 改为主机 IP 后使用相同 room 参数连接。');
+        });
         $('input[name="levelSelect"]').click(function(){
             //Prevent vibration
             if (Game.level!=null) return;
+            var playerToken=$('div.lobby input[name="playerToken"]').val();
+            if (!playerToken) { Game.showMessage('请输入玩家 token 后开始'); return; }
             var serverUrl=$('div.lobby input[name="serverUrl"]').val();
             if (serverUrl) Game.serverUrl=serverUrl;
-            Game.aiConfig={model:$('div.lobby input[name="model"]').val(),gatewayUrl:$('div.lobby input[name="gatewayUrl"]').val()};
+            Game.playerToken=playerToken;
+            Game.opponentToken=$('div.lobby input[name="opponentToken"]').val()||null;
+            Game.aiConfig={model:$('div.lobby select[name="model"]').val(),gatewayUrl:$('div.lobby input[name="gatewayUrl"]').val(),playerToken:Game.playerToken,opponentToken:Game.opponentToken};
             Game.level=parseInt(this.value);
             Game.play();
         });
