@@ -392,6 +392,23 @@ div#GamePlay div.resource_Box>span{
     min-width:50px;
     display:inline-block;
 }
+div#GamePlay aside.command_Log{
+    position:absolute;right:12px;top:12px;width:270px;max-height:280px;z-index:20;
+    color:#d9f4ff;background:rgba(0,12,25,.84);border:1px solid #3b87b8;font:12px Arial;padding:8px;
+}
+div#GameStart div.lobby{position:absolute;z-index:2;left:40px;top:40px;width:330px;padding:18px;color:#dff6ff;background:rgba(0,12,28,.88);border:1px solid #4aa2d4;font:14px Arial}
+div#GameStart div.lobby h1{margin:0 0 16px;font-size:22px}
+div#GameStart div.lobby label{display:block;margin:8px 0}
+div#GameStart div.lobby input{width:100%;box-sizing:border-box;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2;padding:5px}
+div#GameStart div.lobby p{font-size:12px;color:#b4d4e5}
+div#GamePlay aside.command_Log h3{margin:0 0 6px;color:#fff;font-size:14px}
+div#GamePlay div.command_LogEntries{max-height:190px;overflow-y:auto}
+div#GamePlay div.command_LogEntries div{padding:3px 0;border-top:1px solid rgba(130,190,225,.2)}
+div#GamePlay div.command_LogEntries div.human{color:#ffe89c}
+div#GamePlay div.command_LogEntries div.fallback{color:#ffb0a7}
+div#GamePlay div.command_Input{display:flex;margin-top:6px}
+div#GamePlay div.command_Input input{min-width:0;flex:1;background:#071725;color:white;border:1px solid #3b87b8}
+div#GamePlay div.command_Input button{margin-left:4px;color:white;background:#155579;border:1px solid #55a8d9}
 div#GamePlay div.tooltip_Box {
     font:bold 0.8em Arial;
     color:white;

@@ -22,6 +22,8 @@ var Game={
     fogCxt:$('#fogCanvas')[0].getContext('2d'),
     _timer:-1,
     _frameInterval:100,
+    decisionIntervalTicks:100,
+    objective:null,
     mainTick:0,
     serverTick:0,
     commands:{},
@@ -33,6 +35,7 @@ var Game={
     hackMode:false,
     isApp:false,
     offline:false,
+    spectator:false,
     CDN:'',
     addIntoAllSelected:function(chara,override){
         if (chara instanceof Gobj){
@@ -89,7 +92,8 @@ var Game={
         $('div.GameLayer').hide();
         $('#'+layerName).show(); //show('slow')
     },
-    //Parse URL query params to make boot deterministic (no blocking prompt).
+    //Parse URL query params. Interactive starts retain the skin-path prompt;
+    //a supplied CDN keeps scripted/headless boot deterministic.
     //  ?cdn=<url>       -> Game.CDN = <url> (normalized to end with /)
     //  ?serverUrl=<ws>  -> Game.serverUrl = <ws>
     //  ?level=<n>       -> Game.level = n (auto-select a level, for headless)
@@ -100,16 +104,28 @@ var Game={
         if (q.has('cdn')){
             var cdn=q.get('cdn');
             if (cdn){
-                if (!cdn.startsWith('http://')) cdn='http://'+cdn;
+                if (!/^https?:\/\//.test(cdn)) cdn='http://'+cdn;
                 if (!cdn.endsWith('/')) cdn+='/';
                 Game.CDN=cdn;
             }
         } else {
-            Game.CDN='';//local, self-contained
+            var skinPath=window.prompt('请输入皮肤/素材路径或网址（留空使用本地皮肤）','');
+            if (skinPath){
+                if (!/^https?:\/\//.test(skinPath)) skinPath='http://'+skinPath;
+                Game.CDN=skinPath.endsWith('/')?skinPath:skinPath+'/';
+            }
+            else Game.CDN='';//local, self-contained
         }
         if (q.has('serverUrl')) Game.serverUrl=q.get('serverUrl');
         if (q.has('level')) Game.level=parseInt(q.get('level'),10);
         if (q.has('offline')) Game.offline=(q.get('offline')==='1'||q.get('offline')==='true');
+        if (q.has('spectator')) Game.spectator=(q.get('spectator')==='1'||q.get('spectator')==='true');
+        if (q.has('gameSpeed')){
+            var speed=Math.max(0.2,Math.min(1,Number(q.get('gameSpeed'))||1));
+            Game._frameInterval=Math.round(100/speed);
+        }
+        if (q.has('decisionTicks')) Game.decisionIntervalTicks=Math.max(50,parseInt(q.get('decisionTicks'),10)||100);
+        if (q.has('victoryBuilding')) Game.objective={building:q.get('victoryBuilding'),team:q.has('victoryTeam')?parseInt(q.get('victoryTeam'),10):null};
         //Auto-accept confirm() dialogs (e.g. level 2 "Want enter multiplayer mode?")
         //for headless / scripted boot.
         if (q.has('confirm') && (q.get('confirm')==='1'||q.get('confirm')==='true')){
@@ -117,6 +133,7 @@ var Game={
         }
     },
     init:function(){
+        AICommander.init();
         //Prevent full select
         $('div.GameLayer').on("selectstart",function(event){
             event.preventDefault();
@@ -248,6 +265,9 @@ var Game={
         $('input[name="levelSelect"]').click(function(){
             //Prevent vibration
             if (Game.level!=null) return;
+            var serverUrl=$('div.lobby input[name="serverUrl"]').val();
+            if (serverUrl) Game.serverUrl=serverUrl;
+            Game.aiConfig={model:$('div.lobby input[name="model"]').val(),gatewayUrl:$('div.lobby input[name="gatewayUrl"]').val()};
             Game.level=parseInt(this.value);
             Game.play();
         });
@@ -612,6 +632,21 @@ var Game={
         if (chara.status=="dead") return;//Will not show dead
         //Won't draw units outside screen
         if (!chara.insideScreen()) return;
+        // Code-drawn neutral nodes avoid adding a new borrowed sprite asset.
+        if (chara instanceof ResourceNode){
+            var nodeCxt=Game.cxt;
+            var nodeX=(chara.x-GameMap.offsetX)>>0, nodeY=(chara.y-GameMap.offsetY)>>0;
+            nodeCxt.save();
+            if (chara.resourceType=='gas') {
+                nodeCxt.fillStyle='#3bbf72'; nodeCxt.strokeStyle='#c3ffe0';
+                nodeCxt.beginPath(); nodeCxt.arc(nodeX+chara.width/2,nodeY+chara.height/2,18,0,Math.PI*2); nodeCxt.fill(); nodeCxt.stroke();
+            } else {
+                nodeCxt.fillStyle='#5cc7ff'; nodeCxt.strokeStyle='#d5f5ff';
+                nodeCxt.beginPath(); nodeCxt.moveTo(nodeX+chara.width/2,nodeY); nodeCxt.lineTo(nodeX+chara.width,nodeY+chara.height/2); nodeCxt.lineTo(nodeX+chara.width/2,nodeY+chara.height); nodeCxt.lineTo(nodeX,nodeY+chara.height/2); nodeCxt.closePath(); nodeCxt.fill(); nodeCxt.stroke();
+            }
+            nodeCxt.restore();
+            return;
+        }
         //Choose context
         var cxt=((chara instanceof Unit) || (chara instanceof Building))?Game.cxt:Game.frontCxt;
         //Draw shadow
@@ -930,6 +965,11 @@ var Game={
                 }
                 //Draw
                 Game.draw(build);
+            }
+            for (var R=0;R<ResourceNode.allNodes.length;R++){
+                var node=ResourceNode.allNodes[R];
+                if (node.status=='dead') { ResourceNode.allNodes.splice(R,1); R--; continue; }
+                Game.draw(node);
             }
             //DrawLayer2: Show all existed units
             for (var N=0;N<Unit.allUnits.length;N++){

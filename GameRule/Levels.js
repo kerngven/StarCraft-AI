@@ -940,5 +940,31 @@ var Levels=[
                 return true;
             }
         }
+    },
+    {
+        level:13,
+        label:'Economy Sandbox',
+        load:function(){
+            GameMap.setCurrentGameMap('Switchback');
+            GameMap.offsetX=0;
+            GameMap.offsetY=0;
+            Game.race.choose('Terran');
+            // A compact, repeatable P1 fixture: select an SCV and use Gather
+            // (or right-click a blue mineral node). The green geyser becomes
+            // harvestable because the refinery is already constructed.
+            new Building.TerranBuilding.CommandCenter({x:110,y:190});
+            new Building.TerranBuilding.Refinery({x:470,y:250});
+            new Building.TerranBuilding.Barracks({x:260,y:180});
+            new Terran.SCV({x:160,y:245});
+            new Terran.SCV({x:200,y:275});
+            new Terran.SCV({x:225,y:215});
+            Economy.createStandardField(360,300);
+            // A second, unclaimed resource field exercises the expansion path.
+            Economy.createStandardField(950,430);
+            // This is a systems fixture, not a combat scenario.
+            Referee.winCondition=function(){ return false; };
+            Referee.loseCondition=function(){ return false; };
+            Game.commandInterval(function(){ Economy.autopilot(0); },1000);
+        }
     }
 ];

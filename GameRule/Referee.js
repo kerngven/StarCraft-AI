@@ -41,6 +41,12 @@ var Referee={
         }
     })(),
     winCondition:function(){
+        if (Game.objective && Game.objective.building){
+            var objectiveTeam=Game.objective.team==null?Game.team:Game.objective.team;
+            return Building.allBuildings.some(function(building){
+                return building.status!='dead' && building.team==objectiveTeam && building.name==Game.objective.building;
+            });
+        }
         //By default: All our units and buildings are killed
         return (Unit.allEnemyUnits().length==0 && Building.enemyBuildings().length==0);
     },

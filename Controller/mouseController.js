@@ -82,6 +82,7 @@ var mouseController={
     rightClickHandler:function(charas,pos,unlock,btn){
         //Find selected one or nothing
         var selectedEnemy=(charas.length>0)?Game.getSelectedOne(pos.x,pos.y,charas[0].team.toString()):null;
+        var resourceNode=Economy.findNodeAt(pos.x,pos.y);
         charas.forEach(function(chara){
             //Sound effect
             if (!chara.isEnemy() && chara.sound.moving) chara.sound.moving.play();
@@ -98,6 +99,7 @@ var mouseController={
                 delete chara.hold;
                 Button.refreshButtons();
             }
+            if (resourceNode && Economy.gather(chara,resourceNode)) return;
             //Unit cannot attack will always choose move mode
             var attackOrMove=(chara.attack)?(selectedEnemy instanceof Gobj):false;
             //Attack mode

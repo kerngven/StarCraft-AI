@@ -104,6 +104,11 @@ var Button={
             $('button.AdvancedStructure').on('click',function(){
                 Button.equipButtonsFor(Button.advancedProtossStructures);
             });
+            $('button.gather').on('click',function(){
+                var workers=Game.allSelected.filter(Economy.isWorker);
+                if (!workers.length && Economy.isWorker(Game.selectedUnit)) workers=[Game.selectedUnit];
+                if (workers.length) Multiplayer.cmds.push(JSON.stringify({uids:Multiplayer.getUIDs(workers),type:'gather'}));
+            });
             //Upgrade callbacks
             var upgrades=[];
             for (var grade in Upgrade){

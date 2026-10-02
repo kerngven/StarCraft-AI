@@ -7,7 +7,15 @@
     "assets": "node tools/download-assets.js",
     "start": "node tools/server.js",
     "server": "node tools/server.js",
-    "spike": "node tools/spike/spike.js"
+    "rooms": "node tools/room-server.js",
+    "ai-gateway": "node tools/ai-gateway.js",
+    "smoke:ai-gateway": "node tools/ai-gateway-smoke.js",
+    "showmatch": "node tools/showmatch.js",
+    "verify": "npm run smoke:economy && npm run smoke:ai-adapter && npm run smoke:ai-gateway && npm run smoke:rooms && npm run showmatch",
+    "smoke:rooms": "node tools/room-server-smoke.js",
+    "spike": "node tools/spike/spike.js",
+    "smoke:economy": "node tools/spike/economy-smoke.js",
+    "smoke:ai-adapter": "node tools/spike/ai-adapter-smoke.js"
   },
   "dependencies": {
     "playwright": "^1.63.0",

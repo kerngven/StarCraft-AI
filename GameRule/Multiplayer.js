@@ -9,7 +9,9 @@ var Multiplayer={
             //ServerList: (1)HongKong:nvhae.com (3)Canada:104.128.82.12
             //Game.serverUrl defaults to the original; override via ?serverUrl=...
             //to point at the local mock server (tools/mock-server.js). See P0.6.
-            var webSocket=Multiplayer.webSocket=new WebSocket(Game.serverUrl);
+            var socketUrl=Game.serverUrl;
+            if (Game.spectator) socketUrl+=(socketUrl.indexOf('?')==-1?'?':'&')+'spectator=1';
+            var webSocket=Multiplayer.webSocket=new WebSocket(socketUrl);
             webSocket.onerror=function(){
                 //Offline flag for Store&Forward
                 Game.offline=true;
@@ -103,9 +105,12 @@ var Multiplayer={
                     case "start":
                         //Choose team
                         Game.team=msgObj.team;
-                        //Bind controller
-                        mouseController.toControlAll();//Can control all units
-                        keyController.start();//Start monitor
+                        // Spectators render the same command stream but cannot
+                        // bind controls or generate any commands/token work.
+                        if (!Game.spectator){
+                            mouseController.toControlAll();//Can control all units
+                            keyController.start();//Start monitor
+                        }
                         Game.animation();
                         break;
                     case "replay":
@@ -129,6 +134,20 @@ var Multiplayer={
             msgObj.cmds.forEach(function(cmdStr){
                 var cmd=JSON.parse(cmdStr);
                 switch (cmd.type){
+                    case 'expand':
+                        Game.commands[msgObj.tick].push(function(){
+                            var uids=cmd.uids;
+                            return function(){
+                                Multiplayer.getUnitsByUIDs(uids).forEach(function(worker){ Economy.startExpansion(worker); });
+                            };
+                        }());
+                        break;
+                    case 'gather':
+                        Game.commands[msgObj.tick].push(function(){
+                            var uids=cmd.uids;
+                            return function(){ Multiplayer.getUnitsByUIDs(uids).forEach(function(worker){ Economy.gather(worker); }); };
+                        }());
+                        break;
                     case 'rightClick':
                         Game.commands[msgObj.tick].push(function(){
                             //Closures
