@@ -24,14 +24,43 @@
         <div id="GameStart" class="GameLayer">
             <div class="lobby">
                 <h1>AI 指挥官对战</h1>
-                <label>主机地址 <input name="serverUrl" value="ws://localhost:28084/?room=demo&players=2&bots=1" /></label>
-                <button type="button" class="createLocalRoom">建立本地房间</button>
-                <small class="localServerHelp">先在主机运行 <code>npm run rooms</code>；将地址中的 localhost 改为主机局域网 IP 后，其他玩家即可连接。</small>
-                <label>模型连接 <select name="model"><option value="gpt-4.1-mini">经济档（gpt-4.1-mini）</option><option value="openai-compatible">OpenAI Compatible</option><option value="local">本地模型</option></select></label>
-                <label>AI 网关 <input name="gatewayUrl" value="http://localhost:28085" /></label>
-                <label>玩家 token <input name="playerToken" type="password" autocomplete="off" required placeholder="必填：你的对局 token" /></label>
-                <label>对手 token <input name="opponentToken" type="password" autocomplete="off" placeholder="可选：与主机 AI 对战时填写" /></label>
-                <p>选择关卡开始。皮肤路径仍会在启动时单独询问。</p>
+                <div class="lobbyTabs" role="tablist">
+                    <button type="button" class="lobbyTab active" data-tab="match" role="tab">对局</button>
+                    <button type="button" class="lobbyTab" data-tab="models" role="tab">模型配置</button>
+                </div>
+                <section class="lobbyPanel matchPanel" data-panel="match">
+                    <label>主机地址 <input name="serverUrl" value="ws://localhost:28084/?room=demo&players=2&bots=1" /></label>
+                    <button type="button" class="createLocalRoom">建立本地房间</button>
+                    <small class="localServerHelp">先在主机运行 <code>npm run rooms</code>；将地址中的 localhost 改为主机局域网 IP 后，其他玩家即可连接。</small>
+                    <label>玩家模型 <select name="playerModelConfig"></select></label>
+                    <label>对手模型 <select name="opponentModelConfig"></select></label>
+                    <small>玩家和对手均从已保存的模型配置中选择；所选配置中的 token 将作为各自的对局 token。</small>
+                    <p>选择关卡后点击开始。皮肤路径仍会在启动时单独询问。</p>
+                    <button type="button" class="startGame" disabled>开始游戏</button>
+                    <div class="startError" role="alert" aria-live="assertive"></div>
+                </section>
+                <section class="lobbyPanel modelPanel" data-panel="models" hidden>
+                    <p class="modelStorageNotice">配置保存在当前浏览器中，包含 token 的设备请妥善保管。</p>
+                    <label>配置名称 <input name="modelConfigName" maxlength="50" placeholder="例如：本地 Ollama" /></label>
+                    <fieldset class="model_Config">
+                    <legend>模型连接</legend>
+                    <label>模型类型 <select name="modelType"><option value="openai-compatible">OpenAI Compatible</option><option value="local">本地模型</option><option value="openai">OpenAI</option></select></label>
+                    <label>API 版本 <select name="apiMode"><option value="chat-completions">旧版：Chat Completions</option><option value="responses">新版：Responses API</option></select></label>
+                    <label>模型地址 <input name="modelBase" value="http://localhost:11434/v1" placeholder="例如 http://127.0.0.1:8080/v1" /></label>
+                    <label>模型 token <input name="modelToken" type="password" autocomplete="off" placeholder="本地模型可留空" /></label>
+                    <label>模型名称 <input name="model" value="local" autocomplete="off" placeholder="可手动输入" /></label>
+                    <label>检测到的模型 <select name="availableModels"><option value="">请先测试连接</option></select></label>
+                    <small class="modelNameWarning" role="status"></small>
+                    <div class="model_Params"><label>温度 <input name="temperature" type="number" min="0" max="2" step="0.1" value="0.2" /></label><label>Top-P <input name="topP" type="number" min="0" max="1" step="0.05" value="1" /></label><label>最大输出 <input name="maxTokens" type="number" min="64" max="4000" step="64" value="800" /></label></div>
+                    </fieldset>
+                    <label>AI 网关 <input name="gatewayUrl" value="http://localhost:28085" /></label>
+                    <small>AI 网关是游戏调用模型的本地转发服务（默认 <code>npm run ai-gateway</code> 启动于 :28085）；模型地址才是 Ollama、OpenAI 或其他模型服务的地址。</small>
+                    <label>检测文本 <input name="modelTestInput" value="请回复：连接成功" maxlength="500" /><button type="button" class="sendModelTest">发送</button></label>
+                    <button type="button" class="testModelConnection">检测</button><button type="button" class="cancelModelTest" disabled>取消</button><span class="modelTestStatus" role="status" aria-live="polite"></span>
+                    <pre class="modelTestResponse" aria-live="polite"></pre><button type="button" class="copyModelTestResponse" hidden>复制返回</button><button type="button" class="clearModelTestResponse" hidden>清空</button>
+                    <label>已保存配置 <select name="savedModelConfig" size="5"></select></label>
+                    <div class="modelConfigActions"><button type="button" class="saveModelConfig">保存配置</button><button type="button" class="newModelConfig">新建配置</button><button type="button" class="deleteModelConfig">删除当前配置</button><button type="button" class="exportModelConfigs">导出</button><button type="button" class="importModelConfigs">导入</button><input name="modelConfigFile" type="file" accept="application/json" hidden /></div>
+                </section>
             </div>
             <div class="levelSelectionBg"></div>
         </div>
@@ -87,7 +116,7 @@
             <div class="panel_Control"></div>
             <div class="warning_Box"></div>
             <div id="cheat_Box">
-                Message: <input type="text" id="cheatInput" />
+                Message（Ctrl+Enter 发送）: <input type="text" id="cheatInput" />
             </div>
             <div class="message_Box"></div>
             <div class="resource_Box">
@@ -99,10 +128,21 @@
                 <span class="manNum"><span></span>/<span></span></span>
             </div>
             <aside class="command_Log" aria-label="AI command log">
-                <h3>指挥日志</h3>
-                <div class="command_LogEntries"></div>
+                <h3>指挥日志 <span class="command_Connection" role="status">未连接</span><button type="button" class="leave_Match">弃权</button></h3>
+                <section class="command_Section command_Active">
+                    <h4>行动中</h4>
+                    <div class="command_ActionPager" aria-label="最近 AI 行动">
+                        <button type="button" class="command_ActionPrev" aria-label="显示较早的行动" disabled>‹</button>
+                        <div class="command_ActionTabs" role="tablist" aria-label="行动指令"></div>
+                        <button type="button" class="command_ActionNext" aria-label="显示较新的行动" disabled>›</button>
+                    </div>
+                    <pre class="command_APIOutput" aria-live="polite">当前没有行动中的 AI 指令</pre>
+                </section>
+                <div class="command_Tabs" role="tablist"><button type="button" class="active" data-command-tab="history" role="tab">历史指令</button><button type="button" data-command-tab="errors" role="tab">错误指令</button></div>
+                <section class="command_Section command_History"><div class="command_LogEntries"></div><pre class="command_LogDetail" hidden aria-live="polite"></pre></section>
                 <div class="command_Input"><input type="text" maxlength="500" placeholder="向 AI 下达指令"/><button type="button">发送</button></div>
             </aside>
+            <div class="concede_Dialog" role="alertdialog" aria-modal="true" aria-label="确认弃权" hidden><p>确认弃权并结束本局战斗？</p><button type="button" class="confirm_Concede">确认弃权</button><button type="button" class="cancel_Concede">继续战斗</button></div>
             <div class="tooltip_Box">
                 <div class="itemName"></div>
                 <div class="cost">

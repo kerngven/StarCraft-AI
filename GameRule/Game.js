@@ -38,7 +38,194 @@ var Game={
     isApp:false,
     offline:false,
     spectator:false,
+    battleActive:false,
     CDN:'',
+    skinCacheKey:'starcraft-ai.skin-path',
+    modelConfigsKey:'starcraft-ai.model-configs',
+    modelCredentialsKey:'starcraft-ai.model-credentials',
+    defaultModelConfig:function(){
+        return {id:'local-default',name:'本地模型（默认）',type:'local',apiMode:'chat-completions',base:'http://localhost:11434/v1',token:'',model:'local',temperature:0.2,topP:1,maxTokens:800,gatewayUrl:'http://localhost:28085'};
+    },
+    modelConfigs:function(){
+        try {
+            var saved=JSON.parse(window.localStorage.getItem(Game.modelConfigsKey));
+            if (saved instanceof Array && saved.length) {
+                var credentials=JSON.parse(window.sessionStorage.getItem(Game.modelCredentialsKey)||'{}');
+                return saved.map(function(config){ return $.extend({},config,{token:credentials[config.id]||config.token||''}); });
+            }
+        } catch (e) {}
+        return [Game.defaultModelConfig()];
+    },
+    saveModelConfigs:function(configs){
+        try {
+            var credentials={}, safe=configs.map(function(config){ credentials[config.id]=config.token||''; return $.extend({},config,{token:''}); });
+            window.localStorage.setItem(Game.modelConfigsKey,JSON.stringify(safe));
+            window.sessionStorage.setItem(Game.modelCredentialsKey,JSON.stringify(credentials));
+            return true;
+        }
+        catch (e) { Game.startError('无法保存模型配置：'+(e.message||e)); return false; }
+    },
+    normalizeModelConfig:function(config){
+        return {
+            id:config.id || ('model-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)),
+            name:config.name || '未命名模型', type:config.type || 'openai-compatible', apiMode:config.apiMode==='responses'?'responses':'chat-completions', base:config.base || '', token:config.token || '', model:config.model || '',
+            temperature:Math.max(0,Math.min(2,Number(config.temperature)||0.2)),
+            topP:Math.max(0,Math.min(1,Number(config.topP)||1)),
+            maxTokens:Math.max(64,Math.min(4000,parseInt(config.maxTokens,10)||800)), gatewayUrl:config.gatewayUrl || 'http://localhost:28085'
+        };
+    },
+    modelConfigFromForm:function(){
+        return Game.normalizeModelConfig({
+            id:$('div.lobby select[name="savedModelConfig"]').val()||null,
+            name:$('div.lobby input[name="modelConfigName"]').val(), type:$('div.lobby select[name="modelType"]').val(), apiMode:$('div.lobby select[name="apiMode"]').val(),
+            base:$('div.lobby input[name="modelBase"]').val(), token:$('div.lobby input[name="modelToken"]').val(), model:$('div.lobby input[name="model"]').val(),
+            temperature:$('div.lobby input[name="temperature"]').val(), topP:$('div.lobby input[name="topP"]').val(),
+            maxTokens:$('div.lobby input[name="maxTokens"]').val(), gatewayUrl:$('div.lobby input[name="gatewayUrl"]').val()
+        });
+    },
+    populateModelForm:function(config){
+        config=Game.normalizeModelConfig(config);
+        $('div.lobby input[name="modelConfigName"]').val(config.name);
+        $('div.lobby select[name="modelType"]').val(config.type);
+        $('div.lobby select[name="apiMode"]').val(config.apiMode);
+        $('div.lobby input[name="modelBase"]').val(config.base);
+        $('div.lobby input[name="modelToken"]').val(config.token);
+        $('div.lobby input[name="model"]').val(config.model);
+        $('div.lobby input[name="temperature"]').val(config.temperature);
+        $('div.lobby input[name="topP"]').val(config.topP);
+        $('div.lobby input[name="maxTokens"]').val(config.maxTokens);
+        $('div.lobby input[name="gatewayUrl"]').val(config.gatewayUrl);
+    },
+    refreshModelConfigSelectors:function(selectedId){
+        var configs=Game.modelConfigs();
+        var selects=$('div.lobby select[name="playerModelConfig"],div.lobby select[name="opponentModelConfig"],div.lobby select[name="savedModelConfig"]');
+        selects.each(function(){
+            var prior=selectedId || $(this).val();
+            $(this).empty();
+            configs.forEach(function(config){ $('<option>').val(config.id).text(config.name).appendTo(this); }.bind(this));
+            $(this).val(prior && configs.some(function(config){ return config.id==prior; }) ? prior : configs[0].id);
+        });
+    },
+    selectedModelConfig:function(name){
+        var id=$('div.lobby select[name="'+name+'"]').val();
+        return Game.modelConfigs().filter(function(config){ return config.id==id; })[0] || null;
+    },
+    populateAvailableModels:function(models){
+        var select=$('select[name="availableModels"]').empty();
+        $('<option>').val('').text(models instanceof Array && models.length?'选择一个模型以填入上方名称':'未发现可选择的模型').appendTo(select);
+        (models instanceof Array?models:[]).forEach(function(model){
+            if (typeof model==='string' && model) $('<option>').val(model).text(model).appendTo(select);
+        });
+        Game.validateSelectedModel(models);
+    },
+    validateSelectedModel:function(models){
+        var model=$('input[name="model"]').val(), warning=$('small.modelNameWarning');
+        warning.text(models instanceof Array && models.length && models.indexOf(model)===-1?'当前模型不在检测到的列表中；可手动保留，但发送可能失败。':'');
+    },
+    initModelConfigUI:function(){
+        Game.refreshModelConfigSelectors();
+        Game.populateModelForm(Game.selectedModelConfig('savedModelConfig'));
+        $('button.lobbyTab').on('click',function(){
+            var tab=$(this).attr('data-tab');
+            $('button.lobbyTab').removeClass('active'); $(this).addClass('active');
+            $('div.lobby section.lobbyPanel').prop('hidden',true);
+            $('div.lobby section[data-panel="'+tab+'"]').prop('hidden',false);
+        });
+        $('select[name="savedModelConfig"]').on('change',function(){ Game.populateModelForm(Game.selectedModelConfig('savedModelConfig')); });
+        $('select[name="availableModels"]').on('change',function(){
+            if ($(this).val()) $('input[name="model"]').val($(this).val());
+            Game.validateSelectedModel($('select[name="availableModels"] option').map(function(){return this.value;}).get().filter(Boolean));
+        });
+        $('input[name="model"]').on('input',function(){ Game.validateSelectedModel($('select[name="availableModels"] option').map(function(){return this.value;}).get().filter(Boolean)); });
+        $('button.newModelConfig').on('click',function(){
+            $('select[name="savedModelConfig"]').val('');
+            Game.populateModelForm(Game.defaultModelConfig());
+            $('input[name="modelConfigName"]').val('');
+        });
+        $('button.saveModelConfig').on('click',function(){
+            var config=Game.modelConfigFromForm();
+            if (!config.name.trim()) { Game.startError('请为模型配置填写名称。'); return; }
+            var configs=Game.modelConfigs(), found=false;
+            configs=configs.map(function(item){ if (item.id==config.id) { found=true; return config; } return item; });
+            if (!found) configs.push(config);
+            if (Game.saveModelConfigs(configs)) {
+                Game.refreshModelConfigSelectors(config.id);
+                Game.populateModelForm(config);
+                Game.clearStartError();
+            }
+        });
+        $('button.testModelConnection').on('click',function(){
+            var button=$(this), status=$('span.modelTestStatus'), output=$('pre.modelTestResponse'), config=Game.modelConfigFromForm();
+            if (!config.base || !config.model) { status.removeClass('success').addClass('error').text('请填写模型地址和名称。'); return; }
+            button.prop('disabled',true); $('button.cancelModelTest').prop('disabled',false); status.removeClass('success error').text('正在检测…'); output.hide().empty();
+            Game.modelTestRequest=AICommander.testConnection(config); Game.modelTestRequest.then(function(result){
+                Game.populateAvailableModels(result.models);
+                var modelCount=result.models instanceof Array?result.models.length:0;
+                status.removeClass('error').addClass('success').text('检测成功：'+modelCount+' 个模型，耗时 '+(result.elapsedMs||'?')+'ms。');
+                output.text('API：'+(result.base||config.base)+'\n模型：'+(result.models&&result.models.length?result.models.join(', '):'无')).show();
+            }).catch(function(error){
+                status.removeClass('success').addClass('error').text(error.name==='AbortError'?'检测已取消或超时。':'检测失败：'+(error.message||error));
+            }).then(function(){ button.prop('disabled',false); $('button.cancelModelTest').prop('disabled',true); Game.modelTestRequest=null; });
+        });
+        $('button.sendModelTest').on('click',function(){
+            var button=$(this), status=$('span.modelTestStatus'), output=$('pre.modelTestResponse'), config=Game.modelConfigFromForm(), prompt=$('input[name="modelTestInput"]').val();
+            if (!config.base || !config.model) { status.removeClass('success').addClass('error').text('请填写模型地址和名称。'); return; }
+            if (!String(prompt||'').trim()) { status.removeClass('success').addClass('error').text('请输入要发送的检测文本。'); return; }
+            button.prop('disabled',true); $('button.cancelModelTest').prop('disabled',false); status.removeClass('success error').text('正在发送…'); output.hide().empty();
+            Game.modelTestRequest=AICommander.sendTestMessage(config,prompt); Game.modelTestRequest.then(function(result){
+                status.removeClass('error').addClass('success').text('模型已返回，耗时 '+(result.elapsedMs||'?')+'ms。');
+                output.text(result.content||'(模型未返回文本内容)').show(); $('button.copyModelTestResponse,button.clearModelTestResponse').prop('hidden',false);
+            }).catch(function(error){
+                status.removeClass('success').addClass('error').text(error.name==='AbortError'?'发送已取消或超时。':'发送失败：'+(error.message||error));
+            }).then(function(){ button.prop('disabled',false); $('button.cancelModelTest').prop('disabled',true); Game.modelTestRequest=null; });
+        });
+        $('button.cancelModelTest').on('click',function(){ if(Game.modelTestRequest&&Game.modelTestRequest.abort)Game.modelTestRequest.abort(); });
+        $('button.clearModelTestResponse').on('click',function(){ $('pre.modelTestResponse').empty().hide(); $('button.copyModelTestResponse,button.clearModelTestResponse').prop('hidden',true); });
+        $('button.copyModelTestResponse').on('click',function(){ var value=$('pre.modelTestResponse').text(); if(navigator.clipboard)navigator.clipboard.writeText(value); });
+        $('button.deleteModelConfig').on('click',function(){
+            var id=$('select[name="savedModelConfig"]').val(), configs=Game.modelConfigs();
+            if (configs.length<=1) { Game.startError('至少保留一个模型配置。'); return; }
+            configs=configs.filter(function(config){ return config.id!=id; });
+            if (Game.saveModelConfigs(configs)) {
+                Game.refreshModelConfigSelectors();
+                Game.populateModelForm(Game.selectedModelConfig('savedModelConfig'));
+            }
+        });
+        $('button.exportModelConfigs').on('click',function(){
+            var configs=Game.modelConfigs().map(function(config){ return $.extend({},config,{token:''}); });
+            var link=document.createElement('a'); link.href=URL.createObjectURL(new Blob([JSON.stringify(configs,null,2)],{type:'application/json'})); link.download='starcraft-ai-model-configs.json'; link.click(); URL.revokeObjectURL(link.href);
+        });
+        $('button.importModelConfigs').on('click',function(){ $('input[name="modelConfigFile"]').click(); });
+        $('input[name="modelConfigFile"]').on('change',function(){
+            var file=this.files&&this.files[0]; if(!file)return;
+            var reader=new FileReader(); reader.onload=function(){ try {
+                var imported=JSON.parse(reader.result); if(!(imported instanceof Array)||!imported.length)throw new Error('文件中没有配置');
+                var configs=imported.map(Game.normalizeModelConfig).map(function(config){ config.token=''; return config; });
+                if(Game.saveModelConfigs(configs)){ Game.refreshModelConfigSelectors(configs[0].id); Game.populateModelForm(configs[0]); Game.clearStartError(); }
+            } catch(error){ Game.startError('导入模型配置失败：'+(error.message||error)); } }; reader.readAsText(file); this.value='';
+        });
+    },
+    startError:function(message){
+        var text='启动失败：'+message;
+        $('#GameStart div.startError').text(text).show();
+        Game.showMessage(text,10000);
+    },
+    clearStartError:function(){
+        $('#GameStart div.startError').empty().hide();
+    },
+    saveSkinPath:function(path){
+        // Keep the chosen skin endpoint for the next interactive launch. Asset
+        // bytes are cached by the browser using their stable URLs; this only
+        // remembers which skin set to reuse.
+        try {
+            if (path) window.localStorage.setItem(Game.skinCacheKey,path);
+            else window.localStorage.removeItem(Game.skinCacheKey);
+        } catch (e) {}//Private browsing/storage restrictions must not block boot.
+    },
+    cachedSkinPath:function(){
+        try { return window.localStorage.getItem(Game.skinCacheKey)||''; }
+        catch (e) { return ''; }
+    },
     addIntoAllSelected:function(chara,override){
         if (chara instanceof Gobj){
             //Add into allSelected if not included
@@ -109,14 +296,20 @@ var Game={
                 if (!/^https?:\/\//.test(cdn)) cdn='http://'+cdn;
                 if (!cdn.endsWith('/')) cdn+='/';
                 Game.CDN=cdn;
+                Game.saveSkinPath(cdn);
             }
         } else {
-            var skinPath=window.prompt('请输入皮肤/素材路径或网址（留空使用本地皮肤）','');
+            var lastSkinPath=Game.cachedSkinPath();
+            var skinPath=window.prompt('请输入皮肤/素材路径或网址（留空使用本地皮肤）',lastSkinPath||'www.nvhae.com/starcraft');
             if (skinPath){
                 if (!/^https?:\/\//.test(skinPath)) skinPath='http://'+skinPath;
                 Game.CDN=skinPath.endsWith('/')?skinPath:skinPath+'/';
+                Game.saveSkinPath(Game.CDN);
             }
-            else Game.CDN='';//local, self-contained
+            else {
+                Game.CDN='';//local, self-contained
+                Game.saveSkinPath('');
+            }
         }
         if (q.has('serverUrl')) Game.serverUrl=q.get('serverUrl');
         if (q.has('level')) Game.level=parseInt(q.get('level'),10);
@@ -136,6 +329,17 @@ var Game={
     },
     init:function(){
         AICommander.init();
+        $('button.cancel_Concede').on('click',function(){ $('div.concede_Dialog').prop('hidden',true); });
+        $('button.confirm_Concede').on('click',function(){ Game.quitMatch(); });
+        window.addEventListener('keydown',function(event){
+            if (Game.battleActive && (event.key==='F5' || ((event.ctrlKey||event.metaKey) && String(event.key).toLowerCase()==='r'))) {
+                event.preventDefault(); Game.showWarning('战斗进行中：请使用“弃权”返回主页菜单。');
+            }
+        });
+        window.addEventListener('beforeunload',function(event){
+            if (!Game.battleActive) return;
+            event.preventDefault(); event.returnValue='战斗进行中，请使用“弃权”返回主页菜单。'; return event.returnValue;
+        });
         //Prevent full select
         $('div.GameLayer').on("selectstart",function(event){
             event.preventDefault();
@@ -251,11 +455,15 @@ var Game={
             AlloyImage(sourceLoader.sources['Wraith']).act("setHSI",100,0,0,false).replace(sourceLoader.sources['Wraith']);
             AlloyImage(sourceLoader.sources['BattleCruiser']).act("setHSI",100,0,0,false).replace(sourceLoader.sources['BattleCruiser']);*/
             Game.start();
+            if (sourceLoader.errors.length){
+                Game.startError('部分皮肤素材无法加载。请检查皮肤地址、网络或跨域设置：\n'+sourceLoader.errorSummary());
+            }
         })
     },
     start:function(){
         //Game start
         Game.layerSwitchTo("GameStart");
+        Game.initModelConfigUI();
         //Init level selector
         for (var level=1; level<=Levels.length; level++){
             $('.levelSelectionBg').append("<div class='levelItem'>" +
@@ -263,24 +471,58 @@ var Game={
                 (Levels[level-1].label?(Levels[level-1].label):("Level "+level))
                 +"</input></div>");
         }
-        //Wait for user select level and play game
+        var selectedLevel=null;
+        var collectStartConfig=function(){
+            var playerConfig=Game.selectedModelConfig('playerModelConfig');
+            var opponentConfig=Game.selectedModelConfig('opponentModelConfig');
+            if (!playerConfig || !opponentConfig) {
+                Game.startError('请选择玩家模型和对手模型。');
+                return false;
+            }
+            var tokenMissing=[playerConfig,opponentConfig].some(function(config){
+                return config.type!='local' && !config.token;
+            });
+            if (tokenMissing) {
+                Game.startError('OpenAI 或兼容接口的模型配置必须包含 token；本地模型可留空。请在“模型配置”标签中保存。');
+                return false;
+            }
+            var serverUrl=$('div.lobby input[name="serverUrl"]').val();
+            if (serverUrl) Game.serverUrl=serverUrl;
+            return {player:playerConfig,opponent:opponentConfig};
+        };
+        var verifyModelsBeforeStart=function(configs){
+            var names=['玩家模型','对手模型'];
+            $('button.startGame').prop('disabled',true).text('正在连接 AI…');
+            $('#GameStart div.startError').text('启动前检查：正在连接 '+names[0]+' 与 '+names[1]+'。战局内会实时校验并记录 AI 指令格式。').show();
+            return Promise.all([AICommander.validateStartup(configs.player),AICommander.validateStartup(configs.opponent)]).then(function(results){
+                return results;
+            });
+        };
+        //Wait for level selection, then begin only after the explicit button click.
         $('button.createLocalRoom').on('click',function(){
             var room='local-'+Date.now().toString(36);
             $('div.lobby input[name="serverUrl"]').val('ws://localhost:28084/?room='+room+'&players=2&bots=0');
             $('div.lobby small.localServerHelp').text('本地房间已生成。主机运行 npm run rooms；局域网玩家将 localhost 改为主机 IP 后使用相同 room 参数连接。');
         });
         $('input[name="levelSelect"]').click(function(){
-            //Prevent vibration
-            if (Game.level!=null) return;
-            var playerToken=$('div.lobby input[name="playerToken"]').val();
-            if (!playerToken) { Game.showMessage('请输入玩家 token 后开始'); return; }
-            var serverUrl=$('div.lobby input[name="serverUrl"]').val();
-            if (serverUrl) Game.serverUrl=serverUrl;
-            Game.playerToken=playerToken;
-            Game.opponentToken=$('div.lobby input[name="opponentToken"]').val()||null;
-            Game.aiConfig={model:$('div.lobby select[name="model"]').val(),gatewayUrl:$('div.lobby input[name="gatewayUrl"]').val(),playerToken:Game.playerToken,opponentToken:Game.opponentToken};
-            Game.level=parseInt(this.value);
-            Game.play();
+            selectedLevel=parseInt(this.value,10);
+            Game.clearStartError();
+            $('button.startGame').prop('disabled',false).text('开始游戏（关卡 '+selectedLevel+'）');
+        });
+        $('button.startGame').on('click',function(){
+            if (Game.level!=null || !selectedLevel) return;
+            var configs=collectStartConfig(); if (!configs) return;
+            verifyModelsBeforeStart(configs).then(function(){
+                Game.playerToken=configs.player.token;
+                Game.opponentToken=configs.opponent.token;
+                Game.aiConfig=$.extend({},configs.player,{playerToken:Game.playerToken,opponentToken:Game.opponentToken});
+                Game.opponentAIConfig=$.extend({},configs.opponent);
+                Game.clearStartError(); Game.level=selectedLevel; Game.play();
+            }).catch(function(error){
+                Game.startError('AI 启动前连接未通过：'+(error.message||error)+'。请检查模型地址、token、模型名称与 AI 网关。');
+            }).then(function(){
+                if (Game.level==null) $('button.startGame').prop('disabled',false).text('开始游戏（关卡 '+selectedLevel+'）');
+            });
         });
         //Auto-play when ?level=<n> is provided (headless / scripted boot).
         if (Game.level!=null){
@@ -288,8 +530,11 @@ var Game={
         }
     },
     play:function(){
-        //Load level to initial when no error occurs
-        if (!(Levels[Game.level-1].load())){
+        try {
+            if (!Game.level || !Levels[Game.level-1]) throw new Error('未找到所选关卡。');
+            if (typeof AICommander!='undefined') AICommander.beginMatch();
+            //Load level to initial when no error occurs
+            if (Levels[Game.level-1].load()) return;
             //Need Game.playerNum before expansion
             Game.expandUnitProps();
             Resource.init();
@@ -303,7 +548,12 @@ var Game={
             keyController.start();//Start monitor
             Game.pauseWhenHide();//Hew H5 feature:Page Visibility
             Game.initIndexDB();//Hew H5 feature:Indexed DB
+            Game.battleActive=true;
             Game.animation();
+        } catch (error) {
+            Game.layerSwitchTo('GameStart');
+            Game.startError(error && error.message ? error.message : String(error));
+            Game.level=null;
         }
     },
     getPropArray:function(prop){
@@ -1032,6 +1282,11 @@ var Game={
             /************ Calculate for next frame *************/
             //Clock ticking
             Game.mainTick++;
+            //Only the client that owns a team asks for that team's decision.
+            //The resulting commands still go through the normal lockstep queue.
+            if (!Game.spectator && Game.aiConfig && Game.mainTick%Game.decisionIntervalTicks===0) {
+                AICommander.decide(Game.team,Game.aiConfig);
+            }
             //For network mode
             if (Multiplayer.ON){
                 //Send current tick to server
@@ -1093,10 +1348,22 @@ var Game={
         if (Game._timer==-1) Game._timer=setInterval(Game.animation.loop,Game._frameInterval);
     },
     stop:function(charas){
+        if (typeof AICommander!='undefined') AICommander.cancelAll('对局已结束。');
+        Game.battleActive=false;
         charas.forEach(function(chara){
             chara.stop();
         });
         Game.stopAnimation();
+    },
+    quitMatch:function(){
+        if (typeof AICommander!='undefined') AICommander.cancelAll('玩家主动退出战局。');
+        Game.battleActive=false;
+        Game.stopAnimation();
+        Multiplayer.cmds=[];
+        if (Multiplayer.webSocket && (Multiplayer.webSocket.readyState===0 || Multiplayer.webSocket.readyState===1)) Multiplayer.webSocket.close();
+        Multiplayer.ON=false;
+        var url=new URL(window.location.href); url.searchParams.delete('level');
+        window.location.replace(url.pathname+(url.search||'')+(url.hash||''));
     },
     win:function(){
         if (Multiplayer.ON){

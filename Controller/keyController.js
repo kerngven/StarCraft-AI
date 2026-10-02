@@ -88,7 +88,10 @@ var keyController={
                     break;
                 //Press ENTER
                 case 13:
-                    Cheat.handler();
+                    //The legacy chat / cheat input is intentionally separate
+                    //from the AI command input: it opens and sends with
+                    //Ctrl+Enter, leaving plain Enter available to AICommander.
+                    if (event.ctrlKey || keyController.ctrl) Cheat.handler();
                     break;
             }
         };

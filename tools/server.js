@@ -33,6 +33,13 @@ const MIME = {
   '.manifest': 'text/cache-manifest'
 };
 
+// Code and HTML should always reflect the current checkout. Immutable media is
+// addressed by a stable path and can safely be retained by the browser after a
+// skin has loaded, making later game launches substantially faster.
+const CACHEABLE_ASSETS = new Set([
+  '.png', '.jpg', '.jpeg', '.gif', '.ico', '.wav', '.mp3', '.svg'
+]);
+
 const server = http.createServer((req, res) => {
   // Decode the URL path (handles the "(2)Switchback.jpg" style filenames).
   let urlPath;
@@ -56,10 +63,13 @@ const server = http.createServer((req, res) => {
       return;
     }
     const ext = path.extname(filePath).toLowerCase();
+    const cacheControl = CACHEABLE_ASSETS.has(ext)
+      ? 'public, max-age=2592000, immutable'
+      : 'no-cache';
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Content-Length': stat.size,
-      'Cache-Control': 'no-cache'
+      'Cache-Control': cacheControl
     });
     fs.createReadStream(filePath).pipe(res);
   });

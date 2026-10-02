@@ -393,23 +393,79 @@ div#GamePlay div.resource_Box>span{
     display:inline-block;
 }
 div#GamePlay aside.command_Log{
-    position:absolute;right:12px;top:12px;width:270px;max-height:280px;z-index:20;
-    color:#d9f4ff;background:rgba(0,12,25,.84);border:1px solid #3b87b8;font:12px Arial;padding:8px;
+    /* Reserve the upper-right field: resources live above and the command
+       console lives below, so the log never competes with either HUD layer. */
+    position:absolute;right:12px;top:70px;bottom:155px;width:310px;max-height:none;box-sizing:border-box;z-index:20;
+    display:flex;flex-direction:column;color:#d9f4ff;background:rgba(0,12,25,.84);border:1px solid #3b87b8;font:12px Arial;padding:8px;
 }
-div#GameStart div.lobby{position:absolute;z-index:2;left:40px;top:40px;width:330px;padding:18px;color:#dff6ff;background:rgba(0,12,28,.88);border:1px solid #4aa2d4;font:14px Arial}
+/* The legacy HUD makes every GamePlay div absolute; restore normal document
+   flow inside the AI panel so status, history and input cannot overlap. */
+div#GamePlay aside.command_Log div{position:static;z-index:auto}
+div#GameStart div.lobby{position:absolute;z-index:2;right:40px;top:40px;width:330px;max-height:calc(100% - 80px);box-sizing:border-box;overflow-y:auto;padding:18px;color:#dff6ff;background:rgba(0,12,28,.88);border:1px solid #4aa2d4;font:14px Arial}
 div#GameStart div.lobby h1{margin:0 0 16px;font-size:22px}
 div#GameStart div.lobby label{display:block;margin:8px 0}
 div#GameStart div.lobby input{width:100%;box-sizing:border-box;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2;padding:5px}
 div#GameStart div.lobby p{font-size:12px;color:#b4d4e5}
 div#GameStart div.lobby select{width:100%;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2;padding:5px}
+div#GameStart div.lobby fieldset.model_Config{margin:10px 0;padding:7px;border:1px solid #478bb2}
+div#GameStart div.lobby fieldset.model_Config label{margin:5px 0}
+div#GameStart div.lobby div.model_Params{display:flex;gap:5px}
+div#GameStart div.lobby div.model_Params label{flex:1;font-size:11px}
+div#GameStart div.lobby div.model_Params input{width:100%;box-sizing:border-box}
 div#GameStart div.lobby small{display:block;font-size:11px;color:#b4d4e5;line-height:1.35}
 div#GameStart div.lobby button{margin:3px 0;color:white;background:#155579;border:1px solid #55a8d9;padding:5px}
+div#GameStart div.lobby div.lobbyTabs{display:flex;margin:0 0 12px;border-bottom:1px solid #478bb2}
+div#GameStart div.lobby button.lobbyTab{flex:1;margin:0;border:0;border-bottom:3px solid transparent;background:#0a263a}
+div#GameStart div.lobby button.lobbyTab.active{border-bottom-color:#66ceff;background:#155579}
+div#GameStart div.lobby section[hidden]{display:none}
+div#GameStart div.lobby select[name="savedModelConfig"]{width:100%;box-sizing:border-box;margin-top:3px;background:#071725;color:white;border:1px solid #478bb2}
+div#GameStart div.lobby p.modelStorageNotice{padding:6px;background:#392c08;color:#ffe89a;border:1px solid #80691d}
+div#GameStart div.lobby button.startGame{display:block;width:100%;margin-top:12px;font-weight:bold;font-size:15px}
+div#GameStart div.lobby button.startGame:disabled{cursor:not-allowed;opacity:.5}
+div#GameStart div.lobby div.startError{display:none;margin-top:9px;max-height:95px;overflow:auto;white-space:pre-wrap;color:#ffd3d3;background:#4a1010;border:1px solid #e37474;padding:7px;font-size:12px;line-height:1.35}
+div#GameStart div.lobby span.modelTestStatus{display:inline-block;margin-left:7px;font-size:12px;color:#b4d4e5}
+div#GameStart div.lobby span.modelTestStatus.success{color:#8ee6a0}
+div#GameStart div.lobby span.modelTestStatus.error{color:#ffd3d3}
+div#GameStart div.lobby small.modelNameWarning{margin:-3px 0 5px;color:#ffe89a}
+div#GameStart div.lobby pre.modelTestResponse{display:none;margin:6px 0;max-height:110px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#dff6ff;background:#071725;border:1px solid #478bb2;padding:6px;font:12px/1.35 monospace}
+div#GameStart div.lobby div.modelConfigActions{display:flex;gap:5px;margin-top:5px}
+div#GameStart div.lobby div.modelConfigActions button{flex:1}
 div#GamePlay aside.command_Log h3{margin:0 0 6px;color:#fff;font-size:14px}
-div#GamePlay div.command_LogEntries{max-height:190px;overflow-y:auto}
-div#GamePlay div.command_LogEntries div{padding:3px 0;border-top:1px solid rgba(130,190,225,.2)}
-div#GamePlay div.command_LogEntries div.human{color:#ffe89c}
-div#GamePlay div.command_LogEntries div.fallback{color:#ffb0a7}
-div#GamePlay div.command_Input{display:flex;margin-top:6px}
+div#GamePlay span.command_Connection{float:right;font-size:11px;font-weight:normal;color:#9eb8c8}
+div#GamePlay span.command_Connection.busy{color:#ffe89c}
+div#GamePlay aside.command_Log button.leave_Match{float:right;margin:0 7px 0 0;padding:1px 5px;color:#ffd8d8;background:#5b1b25;border:1px solid #d36c76;font-size:11px;cursor:pointer}
+div#GamePlay div.concede_Dialog{position:absolute;z-index:30;left:50%;top:42%;transform:translate(-50%,-50%);width:260px;padding:16px;text-align:center;color:#fff;background:rgba(16,4,8,.96);border:2px solid #d36c76;font:14px Arial}
+div#GamePlay div.concede_Dialog p{position:static;margin:0 0 14px}
+div#GamePlay div.concede_Dialog button{position:static;margin:0 4px;padding:5px 8px;color:#fff;background:#5b1b25;border:1px solid #d36c76;cursor:pointer}
+div#GamePlay div.concede_Dialog button.cancel_Concede{background:#155579;border-color:#55a8d9}
+div#GamePlay aside.command_Log section.command_Section{margin:5px 0}
+/* Give live AI work half of the full command-log panel; the streamed API
+   response grows within that area and scrolls rather than pushing the HUD. */
+div#GamePlay aside.command_Log section.command_Active{flex:0 0 50%;display:flex;flex-direction:column;min-height:0;box-sizing:border-box}
+div#GamePlay aside.command_Log h4{margin:0 0 3px;font-size:12px;color:#bfe9ff}
+div#GamePlay div.command_ActionPager{display:flex;gap:4px;align-items:stretch}
+div#GamePlay div.command_ActionTabs{display:flex;gap:3px;flex:1;min-width:0}
+div#GamePlay div.command_ActionPager button{margin:0;padding:3px 6px;color:#bfe9ff;background:#0a263a;border:1px solid #3b87b8;font-size:11px;cursor:pointer}
+div#GamePlay div.command_ActionTab{display:flex;flex:1;min-width:0;background:#0a263a;border:1px solid #3b87b8}
+div#GamePlay div.command_ActionTab button.command_ActionSelect{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0}
+div#GamePlay div.command_ActionTab button.command_ActionCancel{width:19px;padding:0;color:#ffd8d8;background:#5b1b25;border:0;border-left:1px solid #d36c76;font:16px/14px Arial}
+div#GamePlay div.command_ActionTab.active{background:#155579;border-color:#66ceff}
+div#GamePlay div.command_ActionTab.running button.command_ActionSelect{color:#ffe89c}
+div#GamePlay div.command_ActionPager button:disabled{opacity:.45;cursor:not-allowed}
+div#GamePlay pre.command_APIOutput{position:static;box-sizing:border-box;width:100%;min-height:46px;max-height:none;flex:1;overflow:auto;margin:4px 0 0;padding:5px;white-space:pre-wrap;word-break:break-word;color:#bfe9ff;background:rgba(35,105,145,.25);border-left:2px solid #55a8d9;font:11px/1.35 monospace;-webkit-user-select:text;user-select:text}
+div#GamePlay div.command_Tabs{display:flex;margin-top:7px;border-bottom:1px solid #3b87b8}
+div#GamePlay div.command_Tabs button{flex:1;margin:0;padding:3px;color:#bfe9ff;background:#0a263a;border:0;border-bottom:2px solid transparent;font-size:12px;cursor:pointer}
+div#GamePlay div.command_Tabs button.active{color:#fff;background:#155579;border-bottom-color:#66ceff}
+div#GamePlay div.command_LogEntries{max-height:65px;overflow-y:scroll}
+div#GamePlay div.command_LogEntries button{display:block;box-sizing:border-box;width:100%;overflow:hidden;padding:3px 0;text-align:left;text-overflow:ellipsis;white-space:nowrap;color:#d9f4ff;background:transparent;border:0;border-top:1px solid rgba(130,190,225,.2);font:12px Arial;cursor:pointer;-webkit-user-select:text;user-select:text}
+div#GamePlay div.command_LogEntries button.active{background:rgba(48,126,171,.28)}
+div#GamePlay div.command_LogEntries button.human{color:#ffe89c}
+div#GamePlay div.command_LogEntries button.fallback{color:#ffb0a7}
+div#GamePlay div.command_LogEntries button.error{color:#ffaaa0}
+div#GamePlay div.command_LogEntries button.running{color:#bfe9ff}
+div#GamePlay div.command_LogEntries button.executed{color:#9ee8a9}
+div#GamePlay pre.command_LogDetail{position:static;box-sizing:border-box;width:100%;max-height:110px;overflow-y:scroll;margin:4px 0 0;padding:6px;white-space:pre-wrap;word-break:break-word;color:#d9f4ff;background:#071725;border:1px solid #3b87b8;font:11px/1.35 monospace;-webkit-user-select:text;user-select:text}
+div#GamePlay div.command_Input{display:flex;margin-top:auto;padding-top:6px}
 div#GamePlay div.command_Input input{min-width:0;flex:1;background:#071725;color:white;border:1px solid #3b87b8}
 div#GamePlay div.command_Input button{margin-left:4px;color:white;background:#155579;border:1px solid #55a8d9}
 div#GamePlay div.tooltip_Box {
